@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: incidentpilot
+
+server:
+  port: ${PORT:8080}
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-5.2}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}

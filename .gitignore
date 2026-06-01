@@ -1,3 +1,19 @@
+# macOS metadata
+.DS_Store
+
+# Build and dependency directories
+/target/
+/HELP.md
+backend/.m2/
+backend/target/
+frontend/dist/
+frontend/node_modules/
+
+# Env files
+.env
+.env.*
+!.env.example
+
 # Compiled class file
 *.class
 
