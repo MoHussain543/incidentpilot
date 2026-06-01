@@ -2,9 +2,47 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "./App";
 
+const { mockGetSession, mockSignIn, mockSignOut, mockSignUp } = vi.hoisted(() => ({
+  mockGetSession: vi.fn(async () => ({
+    data: {
+      session: {
+        user: {
+          email: "tester@example.com"
+        }
+      }
+    }
+  })),
+  mockSignIn: vi.fn(),
+  mockSignOut: vi.fn(),
+  mockSignUp: vi.fn()
+}));
+
+vi.mock("./supabase", () => ({
+  hasSupabaseConfig: true,
+  supabase: {
+    auth: {
+      getSession: mockGetSession,
+      onAuthStateChange: () => ({
+        data: {
+          subscription: {
+            unsubscribe: vi.fn()
+          }
+        }
+      }),
+      signOut: mockSignOut,
+      signInWithPassword: mockSignIn,
+      signUp: mockSignUp
+    }
+  }
+}));
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  mockGetSession.mockClear();
+  mockSignIn.mockClear();
+  mockSignOut.mockClear();
+  mockSignUp.mockClear();
 });
 
 describe("App", () => {
@@ -29,7 +67,7 @@ describe("App", () => {
 
     render(<App />);
 
-    fireEvent.change(screen.getByLabelText("Incident title"), { target: { value: "Checkout failures" } });
+    fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
     fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "HTTP 500 spike" } });
     fireEvent.change(screen.getByLabelText("Logs or stack trace"), {
@@ -51,7 +89,7 @@ describe("App", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     render(<App />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Analyze incident" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Analyze incident" }));
 
     expect(await screen.findByText("Incident title is required.")).toBeInTheDocument();
     expect(screen.getByText("Fix the highlighted fields before analyzing this incident.")).toBeInTheDocument();
@@ -68,7 +106,7 @@ describe("App", () => {
 
     render(<App />);
 
-    fireEvent.change(screen.getByLabelText("Incident title"), { target: { value: "Checkout failures" } });
+    fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
     fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "HTTP 500 spike" } });
     fireEvent.change(screen.getByLabelText("Logs or stack trace"), {
@@ -102,7 +140,7 @@ describe("App", () => {
 
     render(<App />);
 
-    fireEvent.change(screen.getByLabelText("Incident title"), { target: { value: "Subset 503s" } });
+    fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Subset 503s" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "edge" } });
     fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "5xx increase" } });
     fireEvent.change(screen.getByLabelText("Logs or stack trace"), { target: { value: "cache node 7 timeout" } });
@@ -139,7 +177,7 @@ describe("App", () => {
 
     render(<App />);
 
-    fireEvent.change(screen.getByLabelText("Incident title"), { target: { value: "Checkout failures" } });
+    fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
     fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "HTTP 500 spike" } });
     fireEvent.change(screen.getByLabelText("Logs or stack trace"), {
@@ -187,7 +225,7 @@ describe("App", () => {
 
     render(<App />);
 
-    fireEvent.change(screen.getByLabelText("Incident title"), { target: { value: "Checkout failures" } });
+    fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
     fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "HTTP 500 spike" } });
     fireEvent.change(screen.getByLabelText("Logs or stack trace"), { target: { value: "error" } });

@@ -150,6 +150,26 @@ button {
   font-size: 0.92rem;
 }
 
+.hero-status--account {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hero-status__account {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.hero-status__label {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .status-pill,
 .severity-badge {
   display: inline-flex;
@@ -202,6 +222,11 @@ button {
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.26);
 }
 
+.panel--auth {
+  width: min(100%, 32rem);
+  padding: 1.6rem;
+}
+
 .panel--form,
 .panel--results {
   padding: 1.45rem;
@@ -213,6 +238,10 @@ button {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.25rem;
+}
+
+.panel__header--stacked {
+  flex-direction: column;
 }
 
 .panel__helper {
@@ -296,12 +325,27 @@ button {
   gap: 0.75rem;
 }
 
+.panel__actions--stacked {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .primary-button,
 .secondary-button {
   border-radius: 999px;
   padding: 0.88rem 1.2rem;
   font-weight: 600;
   transition: transform 160ms ease, opacity 160ms ease, box-shadow 160ms ease;
+}
+
+.secondary-button--compact {
+  padding: 0.72rem 1rem;
 }
 
 .primary-button {
@@ -527,6 +571,10 @@ button {
   color: #ffc6ba;
 }
 
+.message-banner p {
+  margin: 0.45rem 0 0;
+}
+
 .message-banner--warning {
   background: rgba(98, 214, 255, 0.08);
   border: 1px solid rgba(98, 214, 255, 0.2);
@@ -629,6 +677,46 @@ button {
   gap: 0.75rem;
 }
 
+.auth-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 32rem);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.auth-copy {
+  padding: 2rem 0;
+}
+
+.auth-copy__list {
+  margin: 1.25rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--text-soft);
+}
+
+.auth-copy__list li + li {
+  margin-top: 0.6rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-block {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(4, 11, 20, 0.9);
+  border: 1px solid rgba(153, 191, 234, 0.16);
+  color: #d9f2ff;
+  overflow-x: auto;
+  font-family: "IBM Plex Mono", monospace;
+  white-space: pre-wrap;
+}
+
 .loading-panel__line {
   height: 0.95rem;
   border-radius: 999px;
@@ -700,6 +788,10 @@ button {
 
 @media (max-width: 1080px) {
   .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-layout {
     grid-template-columns: 1fr;
   }
 
