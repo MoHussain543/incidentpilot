@@ -99,15 +99,20 @@ public class OpenAiIncidentClient {
 							"suspectedComponent", Map.of("type", "string"),
 							"probableCauses", Map.of(
 								"type", "array",
+								"minItems", 1,
+								"maxItems", 5,
 								"items", Map.of("type", "string")
 							),
 							"nextSteps", Map.of(
 								"type", "array",
+								"minItems", 1,
+								"maxItems", 7,
 								"items", Map.of("type", "string")
 							),
 							"confidence", Map.of("type", "number"),
 							"clarifyingQuestions", Map.of(
 								"type", "array",
+								"maxItems", 5,
 								"items", Map.of("type", "string")
 							)
 						),

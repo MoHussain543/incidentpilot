@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class OpenAiProperties {
 
 	private String apiKey = "";
-	private String model = "gpt-5.2";
+	private String model = "gpt-5-mini";
 	private String baseUrl = "https://api.openai.com/v1";
 
 	public String getApiKey() {

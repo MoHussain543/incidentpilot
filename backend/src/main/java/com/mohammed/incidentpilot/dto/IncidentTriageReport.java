@@ -21,13 +21,16 @@ public record IncidentTriageReport(
 	@Size(max = 200, message = "Suspected component must be 200 characters or fewer")
 	String suspectedComponent,
 	@NotNull(message = "Probable causes are required")
+	@Size(min = 1, max = 5, message = "Provide between 1 and 5 probable causes")
 	List<@NotBlank @Size(max = 300) String> probableCauses,
 	@NotNull(message = "Next steps are required")
+	@Size(min = 1, max = 7, message = "Provide between 1 and 7 next steps")
 	List<@NotBlank @Size(max = 300) String> nextSteps,
 	@DecimalMin(value = "0.0", message = "Confidence must be at least 0")
 	@DecimalMax(value = "1.0", message = "Confidence must be at most 1")
 	double confidence,
 	@NotNull(message = "Clarifying questions are required")
+	@Size(max = 5, message = "Clarifying questions must be 5 or fewer")
 	List<@NotBlank @Size(max = 300) String> clarifyingQuestions
 ) {
 	public IncidentTriageReport {

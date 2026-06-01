@@ -13,7 +13,7 @@ public record RefineIncidentRequest(
 	@NotNull(message = "Previous report is required")
 	@Valid
 	IncidentTriageReport previousReport,
-	@NotEmpty(message = "At least one follow-up answer is required")
+	@NotEmpty(message = "Provide at least one follow-up answer before refining the analysis.")
 	List<@Valid FollowUpAnswer> followUpAnswers
 ) {
 }

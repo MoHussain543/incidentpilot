@@ -22,7 +22,7 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
 1. `cd backend`
 2. Set environment variables:
    - `OPENAI_API_KEY`
-   - `OPENAI_MODEL` optional, defaults to `gpt-5.2`
+   - `OPENAI_MODEL` optional, defaults to `gpt-5-mini`
    - `APP_CORS_ALLOWED_ORIGINS` optional, defaults to `http://localhost:5173`
 3. Run `./mvnw spring-boot:run`
 

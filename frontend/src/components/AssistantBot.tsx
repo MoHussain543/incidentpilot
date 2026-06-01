@@ -1,4 +1,4 @@
-type AssistantState = "idle" | "analyzing" | "ready" | "warning";
+type AssistantState = "idle" | "analyzing" | "ready" | "elevated" | "error";
 
 type AssistantBotProps = {
   state: AssistantState;
@@ -50,10 +50,16 @@ export default function AssistantBot({ state }: AssistantBotProps) {
             <path d="M98 121c6 9 16 13 22 13s16-4 22-13" />
           </g>
 
-          <g className="assistant-bot__face assistant-bot__face--warning">
+          <g className="assistant-bot__face assistant-bot__face--elevated">
             <path d="M111 95h18l12 24h-42l12-24z" />
             <rect x="117" y="102" width="6" height="10" rx="3" />
             <circle cx="120" cy="117" r="3" />
+          </g>
+
+          <g className="assistant-bot__face assistant-bot__face--error">
+            <circle cx="103" cy="108" r="6" />
+            <circle cx="137" cy="108" r="6" />
+            <path d="M98 128c6-8 16-12 22-12s16 4 22 12" />
           </g>
         </g>
       </svg>

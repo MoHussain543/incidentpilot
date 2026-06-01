@@ -175,10 +175,17 @@ button {
   color: var(--accent);
 }
 
+.status-pill--elevated,
 .status-pill--warning {
   background: var(--warning-quiet);
   border-color: rgba(255, 129, 107, 0.26);
   color: #ffb1a4;
+}
+
+.status-pill--error {
+  background: rgba(255, 129, 107, 0.1);
+  border-color: rgba(255, 129, 107, 0.34);
+  color: #ffc6ba;
 }
 
 .workspace-grid {
@@ -273,10 +280,20 @@ button {
   color: var(--text-muted);
 }
 
+.field__hint--warning {
+  color: #ffb1a4;
+}
+
 .panel__footer {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+}
+
+.panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .primary-button,
@@ -424,29 +441,62 @@ button {
   display: block;
 }
 
+.assistant-bot--elevated,
 .assistant-bot--warning {
   animation: botHover 2.5s ease-in-out infinite;
 }
 
+.assistant-bot--elevated .assistant-bot__halo,
 .assistant-bot--warning .assistant-bot__halo {
   stroke: rgba(255, 129, 107, 0.16);
 }
 
+.assistant-bot--elevated .assistant-bot__ring,
 .assistant-bot--warning .assistant-bot__ring {
   stroke: rgba(255, 129, 107, 0.42);
 }
 
+.assistant-bot--elevated .assistant-bot__face,
 .assistant-bot--warning .assistant-bot__face {
   display: none;
 }
 
+.assistant-bot--elevated .assistant-bot__face--elevated,
 .assistant-bot--warning .assistant-bot__face--warning {
   display: block;
 }
 
+.assistant-bot--elevated .assistant-bot__face--elevated path,
+.assistant-bot--elevated .assistant-bot__face--elevated rect,
+.assistant-bot--elevated .assistant-bot__face--elevated circle,
 .assistant-bot--warning .assistant-bot__face--warning path,
 .assistant-bot--warning .assistant-bot__face--warning rect,
 .assistant-bot--warning .assistant-bot__face--warning circle {
+  stroke: #ffb1a4;
+}
+
+.assistant-bot--error {
+  animation: botHover 2.8s ease-in-out infinite;
+}
+
+.assistant-bot--error .assistant-bot__halo {
+  stroke: rgba(255, 129, 107, 0.2);
+}
+
+.assistant-bot--error .assistant-bot__ring {
+  stroke: rgba(255, 129, 107, 0.5);
+}
+
+.assistant-bot--error .assistant-bot__face {
+  display: none;
+}
+
+.assistant-bot--error .assistant-bot__face--error {
+  display: block;
+}
+
+.assistant-bot--error .assistant-bot__face--error path,
+.assistant-bot--error .assistant-bot__face--error circle {
   stroke: #ffb1a4;
 }
 
@@ -456,10 +506,31 @@ button {
   margin-bottom: 1rem;
 }
 
+.message-banner--error,
+.message-banner--warning {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.message-banner strong {
+  font-size: 0.92rem;
+}
+
+.message-banner p {
+  margin: 0;
+}
+
 .message-banner--error {
   background: rgba(255, 129, 107, 0.1);
   border: 1px solid rgba(255, 129, 107, 0.2);
   color: #ffc6ba;
+}
+
+.message-banner--warning {
+  background: rgba(98, 214, 255, 0.08);
+  border: 1px solid rgba(98, 214, 255, 0.2);
+  color: var(--text-soft);
 }
 
 .empty-state,
@@ -495,6 +566,12 @@ button {
   gap: 1rem;
 }
 
+.report-topline__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -527,6 +604,12 @@ button {
   color: #f7fbff;
 }
 
+.result-card__note {
+  margin-top: 0.55rem !important;
+  font-size: 0.88rem;
+  color: var(--text-muted) !important;
+}
+
 .result-list {
   margin: 0;
   padding-left: 1.1rem;
@@ -534,6 +617,10 @@ button {
 
 .result-list li + li {
   margin-top: 0.5rem;
+}
+
+.result-list--ordered {
+  padding-left: 1.35rem;
 }
 
 .follow-up-stack {
@@ -628,6 +715,18 @@ button {
   }
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (max-width: 720px) {
   .app-shell {
     padding: 1rem;
@@ -638,7 +737,8 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .report-topline {
+  .report-topline,
+  .report-topline__actions {
     flex-direction: column;
     align-items: flex-start;
   }

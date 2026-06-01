@@ -30,19 +30,40 @@ export async function refineIncident(
 }
 
 async function request<TResponse>(path: string, payload: unknown): Promise<TResponse> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    throw new ApiError(
+      `Could not reach the IncidentPilot API at ${API_BASE_URL}. Check that the backend is running and VITE_API_BASE_URL is correct.`
+    );
+  }
 
   const data = (await response.json().catch(() => null)) as ApiErrorResponse | TResponse | null;
   if (!response.ok) {
-    const errorPayload = (data ?? { message: "The request failed." }) as ApiErrorResponse;
+    const errorPayload = (data ?? { message: defaultErrorMessage(response.status) }) as ApiErrorResponse;
     throw new ApiError(errorPayload.message, errorPayload.fieldErrors ?? {});
   }
 
   return data as TResponse;
+}
+
+function defaultErrorMessage(status: number) {
+  if (status === 400) {
+    return "Please correct the highlighted fields.";
+  }
+  if (status === 502) {
+    return "The AI analysis service failed. Check the backend logs and OpenAI configuration, then try again.";
+  }
+  if (status === 503) {
+    return "The analysis service is not configured. Set OPENAI_API_KEY on the backend.";
+  }
+  return "The request failed. Please try again.";
 }
