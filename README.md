@@ -9,11 +9,13 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
 - Returns a typed triage report with summary, severity, suspected component, probable causes, next steps, confidence, and clarifying questions
 - Supports a follow-up refinement loop instead of a generic chatbot flow
 - Accepts `.log`, `.txt`, and `.md` files on the frontend by folding their text into the incident context
+- Persists analyzed incidents and versioned AI reports to Supabase for the signed-in user (Phase 1)
 
 ## Repo Layout
 
 - `backend/`: Spring Boot API for incident analysis and refinement
 - `frontend/`: Vite + React + TypeScript UI
+- `supabase/`: SQL migrations for profiles, incidents, and incident report versions
 
 ## Local Setup
 
@@ -29,9 +31,22 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
 ### Frontend
 
 1. `cd frontend`
-2. Copy `.env.example` to `.env` if you want to override the default API URL
+2. Copy `.env.example` to `.env` and set Supabase + API values
 3. Run `npm install`
 4. Run `npm run dev`
+
+### Supabase (Phase 1 persistence)
+
+1. Apply `supabase/migrations/001_phase1_persistence.sql` in the Supabase SQL editor (see `supabase/README.md`)
+2. Ensure Email auth is enabled for your project
+3. The frontend saves data with the signed-in user's Supabase session (RLS enforces ownership)
+
+**Persistence behavior**
+
+- **Analyze** creates a new `incidents` row and `incident_reports` version `1`
+- **Refine** appends a new `incident_reports` row with the next version number for the same incident
+- AI analysis still runs through the Spring Boot API; persistence happens after a successful response
+- If saving fails, the on-screen analysis still works and the UI shows a workspace save warning
 
 ## API Contract
 

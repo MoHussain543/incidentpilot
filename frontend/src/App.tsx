@@ -4,6 +4,11 @@ import type { Session } from "@supabase/supabase-js";
 import { ApiError, analyzeIncident, refineIncident } from "./api";
 import AssistantBot from "./components/AssistantBot";
 import { INCIDENT_LIMITS } from "./incidentLimits";
+import {
+  IncidentPersistenceError,
+  persistAnalyzeResult,
+  persistRefineResult
+} from "./incidentPersistence";
 import { hasSupabaseConfig, supabase } from "./supabase";
 import type {
   AnalyzeIncidentRequest,
@@ -67,10 +72,15 @@ export default function App() {
     return <AuthGate />;
   }
 
-  return <IncidentWorkspace userEmail={session.user.email ?? "Signed-in user"} />;
+  return (
+    <IncidentWorkspace
+      userId={session.user.id}
+      userEmail={session.user.email ?? "Signed-in user"}
+    />
+  );
 }
 
-function IncidentWorkspace({ userEmail }: { userEmail: string }) {
+function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: string }) {
   const [formValues, setFormValues] = useState<AnalyzeIncidentRequest>(initialFormValues);
   const [report, setReport] = useState<IncidentTriageReport | null>(null);
   const [lastSubmittedIncident, setLastSubmittedIncident] = useState<AnalyzeIncidentRequest | null>(null);
@@ -79,6 +89,8 @@ function IncidentWorkspace({ userEmail }: { userEmail: string }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState("");
+  const [persistedIncidentId, setPersistedIncidentId] = useState<string | null>(null);
+  const [persistWarning, setPersistWarning] = useState<string | null>(null);
 
   const reportIsStale = Boolean(report && lastSubmittedIncident && !incidentsMatch(lastSubmittedIncident, formValues));
   const assistantState = resolveAssistantState(requestPhase, report?.severity, apiError);
@@ -107,6 +119,24 @@ function IncidentWorkspace({ userEmail }: { userEmail: string }) {
       setReport(nextReport);
       setLastSubmittedIncident({ ...formValues });
       setFollowUpAnswers(createEmptyAnswers(nextReport.clarifyingQuestions));
+      setPersistWarning(null);
+
+      if (supabase) {
+        try {
+          const persisted = await persistAnalyzeResult(
+            supabase,
+            userId,
+            userEmail,
+            formValues,
+            nextReport
+          );
+          setPersistedIncidentId(persisted.incidentId);
+        } catch (error) {
+          setPersistedIncidentId(null);
+          setPersistWarning(resolvePersistenceWarning(error));
+        }
+      }
+
       setRequestPhase("success");
       setStatusMessage("Incident analysis is ready.");
     } catch (error) {
@@ -132,6 +162,12 @@ function IncidentWorkspace({ userEmail }: { userEmail: string }) {
       return;
     }
 
+    if (!persistedIncidentId) {
+      setApiError("This analysis is not linked to a saved incident yet. Run Analyze incident again before refining.");
+      setStatusMessage("Refine requires a saved incident record.");
+      return;
+    }
+
     setRequestPhase("refining");
     setApiError(null);
     setStatusMessage("Refining the incident report.");
@@ -144,6 +180,16 @@ function IncidentWorkspace({ userEmail }: { userEmail: string }) {
       });
       setReport(nextReport);
       setFollowUpAnswers(createEmptyAnswers(nextReport.clarifyingQuestions));
+      setPersistWarning(null);
+
+      if (supabase) {
+        try {
+          await persistRefineResult(supabase, userId, persistedIncidentId, nextReport, answers);
+        } catch (error) {
+          setPersistWarning(resolvePersistenceWarning(error));
+        }
+      }
+
       setRequestPhase("success");
       setStatusMessage("Refined incident analysis is ready.");
     } catch (error) {
@@ -172,6 +218,8 @@ function IncidentWorkspace({ userEmail }: { userEmail: string }) {
     setApiError(null);
     setFieldErrors({});
     setFollowUpAnswers({});
+    setPersistedIncidentId(null);
+    setPersistWarning(null);
     setStatusMessage("Ready for a new incident.");
   }
 
@@ -418,6 +466,13 @@ function IncidentWorkspace({ userEmail }: { userEmail: string }) {
             <div className="message-banner message-banner--error" role="alert">
               <strong>Analysis issue</strong>
               <p>{apiError}</p>
+            </div>
+          ) : null}
+
+          {persistWarning ? (
+            <div className="message-banner message-banner--warning" role="status">
+              <strong>Workspace save issue</strong>
+              <p>{persistWarning}</p>
             </div>
           ) : null}
 
@@ -881,6 +936,13 @@ function statusLabel(
     return "Report ready";
   }
   return "Standing by";
+}
+
+function resolvePersistenceWarning(error: unknown) {
+  if (error instanceof IncidentPersistenceError) {
+    return `${error.message} The analysis is still visible here, but it was not saved to your account history.`;
+  }
+  return "The analysis completed, but it could not be saved to your account history.";
 }
 
 function createEmptyAnswers(questions: string[]) {

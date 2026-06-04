@@ -2,11 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "./App";
 
-const { mockGetSession, mockSignIn, mockSignOut, mockSignUp } = vi.hoisted(() => ({
+const { mockGetSession, mockSignIn, mockSignOut, mockSignUp, mockPersistAnalyze, mockPersistRefine } = vi.hoisted(() => ({
   mockGetSession: vi.fn(async () => ({
     data: {
       session: {
         user: {
+          id: "user-123",
           email: "tester@example.com"
         }
       }
@@ -14,7 +15,17 @@ const { mockGetSession, mockSignIn, mockSignOut, mockSignUp } = vi.hoisted(() =>
   })),
   mockSignIn: vi.fn(),
   mockSignOut: vi.fn(),
-  mockSignUp: vi.fn()
+  mockSignUp: vi.fn(),
+  mockPersistAnalyze: vi.fn(async () => ({ incidentId: "incident-123", reportVersion: 1 })),
+  mockPersistRefine: vi.fn(async () => ({ incidentId: "incident-123", reportVersion: 2 }))
+}));
+
+vi.mock("./incidentPersistence", () => ({
+  IncidentPersistenceError: class IncidentPersistenceError extends Error {
+    name = "IncidentPersistenceError";
+  },
+  persistAnalyzeResult: mockPersistAnalyze,
+  persistRefineResult: mockPersistRefine
 }));
 
 vi.mock("./supabase", () => ({
@@ -43,6 +54,8 @@ afterEach(() => {
   mockSignIn.mockClear();
   mockSignOut.mockClear();
   mockSignUp.mockClear();
+  mockPersistAnalyze.mockClear();
+  mockPersistRefine.mockClear();
 });
 
 describe("App", () => {
@@ -240,5 +253,37 @@ describe("App", () => {
 
     await waitFor(() => expect(screen.getByText("Refined summary")).toBeInTheDocument());
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(mockPersistAnalyze).toHaveBeenCalledOnce();
+    expect(mockPersistRefine).toHaveBeenCalledOnce();
+  });
+
+  it("shows a persistence warning when analyze succeeds but saving fails", async () => {
+    mockPersistAnalyze.mockRejectedValueOnce(new Error("insert failed"));
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          summary: "Saved in UI only",
+          severity: "LOW",
+          suspectedComponent: "web-app",
+          probableCauses: ["Unknown"],
+          nextSteps: ["Gather metrics"],
+          confidence: 0.4,
+          clarifyingQuestions: []
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Slow app" } });
+    fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "web-app" } });
+    fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "Tickets up" } });
+    fireEvent.change(screen.getByLabelText("Logs or stack trace"), { target: { value: "latency_ms=420" } });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze incident" }));
+
+    await waitFor(() => expect(screen.getByText("Saved in UI only")).toBeInTheDocument());
+    expect(screen.getByText("Workspace save issue")).toBeInTheDocument();
   });
 });
