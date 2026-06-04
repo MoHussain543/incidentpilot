@@ -26,6 +26,8 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
    - `OPENAI_API_KEY`
    - `OPENAI_MODEL` optional, defaults to `gpt-5-mini`
    - `APP_CORS_ALLOWED_ORIGINS` optional, defaults to `http://localhost:5173`
+   - `SUPABASE_URL` optional for local dev, required when backend JWT auth is enabled
+   - `APP_REQUIRE_AUTH=false` if you want to run the backend locally without Supabase JWT validation
 3. Run `./mvnw spring-boot:run`
 
 ### Frontend
@@ -61,6 +63,16 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
 - View original incident context, latest report, and prior report versions (newest first)
 - Select an older version to read it; refine only from the latest version
 - **Back to new analysis** returns to the standard analyze/refine flow
+
+**Phase 4 security**
+
+- Supabase RLS + DB trigger enforce per-user incident ownership
+- Frontend verifies the signed-in user before every incident/report read or write
+- Spring Boot protects `/api/v1/incidents/*` with the signed-in Supabase access token when `SUPABASE_URL` is set
+- The backend verifies tokens against Supabase's JWKS endpoint (RS256 and ES256) and validates the expected issuer
+- Set `SUPABASE_JWT_SECRET` only if your project still signs user tokens with the legacy HS256 JWT secret
+- `SUPABASE_JWT_ISSUER` and `SUPABASE_JWKS_URL` are available only if you need to override the derived defaults
+- Set `APP_REQUIRE_AUTH=false` only for local backend development without JWT validation
 
 ## API Contract
 
@@ -110,5 +122,5 @@ Takes the original incident request, the previous report, and user-supplied answ
 - Frontend target: Vercel, with the root directory set to `frontend`
 - Backend target: Railway, with the root directory set to `backend`
 - Set `VITE_API_BASE_URL` in the frontend deployment to the Railway backend URL
-- Set `OPENAI_API_KEY`, `OPENAI_MODEL`, and `APP_CORS_ALLOWED_ORIGINS` in the backend deployment
+- Set `OPENAI_API_KEY`, `OPENAI_MODEL`, `APP_CORS_ALLOWED_ORIGINS`, and `SUPABASE_URL` in the backend deployment
 - A backend [Dockerfile](/Users/bilalhussain/Documents/GitHub/incidentpilot/backend/Dockerfile) is included for container-based Railway deployment

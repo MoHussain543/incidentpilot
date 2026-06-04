@@ -21,3 +21,24 @@ supabase db push
 - `incident_reports` — versioned AI output per incident (`version` starts at 1; refine appends new rows)
 
 Row Level Security restricts all reads and writes to the signed-in user.
+
+## Phase 4 ownership hardening
+
+Run `migrations/002_phase4_ownership_hardening.sql` after Phase 1 to:
+
+- Require `incident_reports` inserts to reference an incident owned by `auth.uid()`
+- Block report updates and deletes (immutable version history)
+- Enforce `incident_reports.user_id = incidents.user_id` via database trigger
+
+## Backend JWT verification
+
+The frontend uses the signed-in user's Supabase access token when it calls the Spring Boot API.
+
+For backend JWT enforcement with Supabase signing keys:
+
+- Set `SUPABASE_URL=https://<project-ref>.supabase.co` in the backend environment
+- Spring Boot derives:
+  - issuer: `https://<project-ref>.supabase.co/auth/v1`
+  - JWKS: `https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json`
+- Only use `SUPABASE_JWT_ISSUER` or `SUPABASE_JWKS_URL` if you need to override those defaults
+- Set `APP_REQUIRE_AUTH=false` only for local development if you intentionally want the backend to skip JWT checks

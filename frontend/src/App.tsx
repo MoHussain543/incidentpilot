@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { ApiError, analyzeIncident, refineIncident } from "./api";
+import { IncidentAccessError } from "./incidentAccess";
 import AssistantBot from "./components/AssistantBot";
 import IncidentDetailView from "./components/IncidentDetailView";
 import IncidentHistoryPanel from "./components/IncidentHistoryPanel";
@@ -131,7 +132,7 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
     setHistoryError(null);
 
     try {
-      const incidents = await fetchSavedIncidents(supabase);
+      const incidents = await fetchSavedIncidents(supabase, userId);
       setSavedIncidents(incidents);
       setHistoryPhase("ready");
     } catch (error) {
@@ -165,7 +166,7 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
       return;
     }
 
-    const detail = await fetchSavedIncidentDetail(supabase, incidentId);
+    const detail = await fetchSavedIncidentDetail(supabase, userId, incidentId);
     setOpenedIncidentDetail(detail);
     applyReportVersion(detail, detail.latestVersion);
   }
@@ -181,7 +182,7 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
     setPersistWarning(null);
 
     try {
-      const detail = await fetchSavedIncidentDetail(supabase, incidentId);
+      const detail = await fetchSavedIncidentDetail(supabase, userId, incidentId);
       setOpenedIncidentDetail(detail);
       applyReportVersion(detail, detail.latestVersion);
       setStatusMessage(`Opened saved incident: ${detail.context.title}`);
@@ -987,6 +988,9 @@ function statusLabel(
 }
 
 function resolveHistoryError(error: unknown) {
+  if (error instanceof IncidentAccessError) {
+    return error.message;
+  }
   if (error instanceof IncidentHistoryError) {
     return error.message;
   }

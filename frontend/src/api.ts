@@ -1,3 +1,4 @@
+import { supabase } from "./supabase";
 import type {
   AnalyzeIncidentRequest,
   ApiErrorResponse,
@@ -35,9 +36,7 @@ async function request<TResponse>(path: string, payload: unknown): Promise<TResp
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: await createRequestHeaders(),
       body: JSON.stringify(payload)
     });
   } catch {
@@ -55,9 +54,33 @@ async function request<TResponse>(path: string, payload: unknown): Promise<TResp
   return data as TResponse;
 }
 
+async function createRequestHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+
+  if (!supabase) {
+    return headers;
+  }
+
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  return headers;
+}
+
 function defaultErrorMessage(status: number) {
   if (status === 400) {
     return "Please correct the highlighted fields.";
+  }
+  if (status === 401) {
+    return "Your session expired or is invalid. Sign in again and retry the analysis.";
+  }
+  if (status === 403) {
+    return "You are not allowed to run this analysis.";
   }
   if (status === 502) {
     return "The AI analysis service failed. Check the backend logs and OpenAI configuration, then try again.";

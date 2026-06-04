@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveScopedUserId } from "./incidentAccess";
 import type {
   AnalyzeIncidentRequest,
   FollowUpAnswer,
@@ -27,9 +28,11 @@ export async function ensureProfile(
   userId: string,
   email: string | null | undefined
 ): Promise<void> {
+  const scopedUserId = await resolveScopedUserId(client, userId);
+
   const { error } = await client.from("profiles").upsert(
     {
-      id: userId,
+      id: scopedUserId,
       email: email ?? null
     },
     { onConflict: "id" }
@@ -47,11 +50,12 @@ export async function persistAnalyzeResult(
   incident: AnalyzeIncidentRequest,
   report: IncidentTriageReport
 ): Promise<PersistAnalyzeResult> {
-  await ensureProfile(client, userId, email);
+  const scopedUserId = await resolveScopedUserId(client, userId);
+  await ensureProfile(client, scopedUserId, email);
 
   const { data: incidentRow, error: incidentError } = await client
     .from("incidents")
-    .insert(mapIncidentInsert(userId, incident))
+    .insert(mapIncidentInsert(scopedUserId, incident))
     .select("id")
     .single();
 
@@ -62,11 +66,11 @@ export async function persistAnalyzeResult(
   }
 
   const { error: reportError } = await client.from("incident_reports").insert(
-    mapReportInsert(userId, incidentRow.id, 1, report, null)
+    mapReportInsert(scopedUserId, incidentRow.id, 1, report, null)
   );
 
   if (reportError) {
-    await cleanupIncident(client, userId, incidentRow.id);
+    await cleanupIncident(client, scopedUserId, incidentRow.id);
     throw new IncidentPersistenceError(reportError.message);
   }
 
@@ -83,11 +87,12 @@ export async function persistRefineResult(
   report: IncidentTriageReport,
   followUpAnswers: FollowUpAnswer[]
 ): Promise<PersistRefineResult> {
-  await assertIncidentOwnership(client, userId, incidentId);
+  const scopedUserId = await resolveScopedUserId(client, userId);
+  await assertIncidentOwnership(client, scopedUserId, incidentId);
 
-  const nextVersion = await resolveNextReportVersion(client, incidentId);
+  const nextVersion = await resolveNextReportVersion(client, scopedUserId, incidentId);
   const { error: reportError } = await client.from("incident_reports").insert(
-    mapReportInsert(userId, incidentId, nextVersion, report, followUpAnswers)
+    mapReportInsert(scopedUserId, incidentId, nextVersion, report, followUpAnswers)
   );
 
   if (reportError) {
@@ -98,7 +103,7 @@ export async function persistRefineResult(
     .from("incidents")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", incidentId)
-    .eq("user_id", userId);
+    .eq("user_id", scopedUserId);
 
   if (incidentError) {
     throw new IncidentPersistenceError(incidentError.message);
@@ -133,12 +138,14 @@ async function assertIncidentOwnership(
 
 async function resolveNextReportVersion(
   client: SupabaseClient,
+  userId: string,
   incidentId: string
 ): Promise<number> {
   const { data, error } = await client
     .from("incident_reports")
     .select("version")
     .eq("incident_id", incidentId)
+    .eq("user_id", userId)
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();

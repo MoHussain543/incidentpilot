@@ -27,7 +27,7 @@ const {
   mockSignUp: vi.fn(),
   mockPersistAnalyze: vi.fn(async () => ({ incidentId: "incident-123", reportVersion: 1 })),
   mockPersistRefine: vi.fn(async () => ({ incidentId: "incident-123", reportVersion: 2 })),
-  mockFetchSavedIncidents: vi.fn(async () => [
+  mockFetchSavedIncidents: vi.fn(async (_client: unknown, _userId: string) => [
     {
       id: "incident-123",
       title: "Checkout failures",
@@ -38,7 +38,7 @@ const {
       reportCount: 1
     }
   ]),
-  mockFetchSavedIncidentDetail: vi.fn(async () => ({
+  mockFetchSavedIncidentDetail: vi.fn(async (_client: unknown, _userId: string, incidentId: string) => ({
     id: "incident-123",
     createdAt: "2026-06-01T12:00:00.000Z",
     updatedAt: "2026-06-01T12:00:00.000Z",
@@ -195,7 +195,7 @@ describe("App", () => {
     );
     expect(screen.getByText(/Version 2 · Latest/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Version 1/i })).toBeInTheDocument();
-    expect(mockFetchSavedIncidentDetail).toHaveBeenCalledWith(expect.anything(), "incident-123");
+    expect(mockFetchSavedIncidentDetail).toHaveBeenCalledWith(expect.anything(), "user-123", "incident-123");
   });
 
   it("loads saved incident history for the signed-in user", async () => {

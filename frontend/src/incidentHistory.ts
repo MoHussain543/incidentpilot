@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveScopedUserId } from "./incidentAccess";
 import type { IncidentSeverity } from "./types";
 
 export type SavedIncidentSummary = {
@@ -32,7 +33,12 @@ export class IncidentHistoryError extends Error {
   }
 }
 
-export async function fetchSavedIncidents(client: SupabaseClient): Promise<SavedIncidentSummary[]> {
+export async function fetchSavedIncidents(
+  client: SupabaseClient,
+  userId: string
+): Promise<SavedIncidentSummary[]> {
+  const scopedUserId = await resolveScopedUserId(client, userId);
+
   const { data, error } = await client
     .from("incidents")
     .select(
@@ -48,6 +54,7 @@ export async function fetchSavedIncidents(client: SupabaseClient): Promise<Saved
         )
       `
     )
+    .eq("user_id", scopedUserId)
     .order("created_at", { ascending: false })
     .limit(50);
 

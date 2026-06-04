@@ -13,3 +13,9 @@ openai:
 app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  security:
+    require-auth: ${APP_REQUIRE_AUTH:true}
+    supabase-url: ${SUPABASE_URL:}
+    jwt-issuer: ${SUPABASE_JWT_ISSUER:}
+    jwk-set-uri: ${SUPABASE_JWKS_URL:}
+    jwt-secret: ${SUPABASE_JWT_SECRET:}

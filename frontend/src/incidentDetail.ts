@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveScopedUserId } from "./incidentAccess";
 import { IncidentHistoryError } from "./incidentHistory";
 import type {
   AnalyzeIncidentRequest,
@@ -51,8 +52,11 @@ type IncidentDetailRow = {
 
 export async function fetchSavedIncidentDetail(
   client: SupabaseClient,
+  userId: string,
   incidentId: string
 ): Promise<SavedIncidentDetail> {
+  const scopedUserId = await resolveScopedUserId(client, userId);
+
   const { data, error } = await client
     .from("incidents")
     .select(
@@ -81,6 +85,7 @@ export async function fetchSavedIncidentDetail(
       `
     )
     .eq("id", incidentId)
+    .eq("user_id", scopedUserId)
     .maybeSingle();
 
   if (error) {

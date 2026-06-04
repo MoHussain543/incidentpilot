@@ -56,9 +56,11 @@ function createMockClient() {
   const reportsInsert = vi.fn(async () => ({ error: null as { message: string } | null }));
   const reportsSelect = vi.fn(() => ({
     eq: vi.fn(() => ({
-      order: vi.fn(() => ({
-        limit: vi.fn(() => ({
-          maybeSingle: vi.fn(async () => ({ data: { version: 1 }, error: null }))
+      eq: vi.fn(() => ({
+        order: vi.fn(() => ({
+          limit: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({ data: { version: 1 }, error: null }))
+          }))
         }))
       }))
     }))
@@ -87,7 +89,13 @@ function createMockClient() {
   });
 
   const client = {
-    from: mockFrom
+    from: mockFrom,
+    auth: {
+      getUser: vi.fn(async () => ({
+        data: { user: { id: "user-123" } },
+        error: null
+      }))
+    }
   };
 
   return {
@@ -142,6 +150,14 @@ describe("incidentPersistence", () => {
 
     expect(result).toEqual({ incidentId: "incident-123", reportVersion: 2 });
     expect(reportsInsert).toHaveBeenCalledOnce();
+  });
+
+  it("rejects cross-user persistence attempts", async () => {
+    const { client } = createMockClient();
+
+    await expect(
+      persistAnalyzeResult(client, "user-456", "tester@example.com", incident, report)
+    ).rejects.toMatchObject({ code: "ACCESS_DENIED" });
   });
 
   it("throws when incident insert fails", async () => {

@@ -43,18 +43,25 @@ describe("fetchSavedIncidentDetail", () => {
       },
       error: null
     }));
+    const eqUser = vi.fn(() => ({ maybeSingle }));
+    const eqId = vi.fn(() => ({ eq: eqUser }));
 
     const client = {
       from: vi.fn(() => ({
         select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            maybeSingle
-          }))
+          eq: eqId
         }))
-      }))
+      })),
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "user-123" } },
+          error: null
+        }))
+      }
     };
 
-    const detail = await fetchSavedIncidentDetail(client as never, "incident-123");
+    const detail = await fetchSavedIncidentDetail(client as never, "user-123", "incident-123");
+    expect(eqUser).toHaveBeenCalledWith("user_id", "user-123");
 
     expect(detail.latestVersion).toBe(2);
     expect(detail.reports).toHaveLength(2);

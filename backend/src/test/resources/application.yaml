@@ -1,0 +1,9 @@
+app:
+  security:
+    require-auth: false
+    supabase-url:
+    jwt-issuer:
+    jwk-set-uri:
+
+openai:
+  api-key: test-key
