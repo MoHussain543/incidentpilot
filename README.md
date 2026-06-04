@@ -53,7 +53,14 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
 - After sign-in, a **Saved incident history** panel lists the user's incidents (newest first)
 - Each row shows title, service, environment, created date, and latest report severity
 - History reloads on login, after successful analyze/refine saves, and via **Refresh**
-- RLS scopes reads to the signed-in user; no detail or full report-history pages yet
+- RLS scopes reads to the signed-in user
+
+**Phase 3 incident detail**
+
+- Click a saved incident in history to open its detail workspace
+- View original incident context, latest report, and prior report versions (newest first)
+- Select an older version to read it; refine only from the latest version
+- **Back to new analysis** returns to the standard analyze/refine flow
 
 ## API Contract
 

@@ -8,7 +8,9 @@ type IncidentHistoryPanelProps = {
   phase: HistoryPhase;
   errorMessage: string | null;
   activeIncidentId: string | null;
+  selectedIncidentId: string | null;
   onRefresh: () => void;
+  onSelectIncident: (incidentId: string) => void;
 };
 
 export default function IncidentHistoryPanel({
@@ -16,7 +18,9 @@ export default function IncidentHistoryPanel({
   phase,
   errorMessage,
   activeIncidentId,
-  onRefresh
+  selectedIncidentId,
+  onRefresh,
+  onSelectIncident
 }: IncidentHistoryPanelProps) {
   return (
     <section className="panel panel--history" aria-labelledby="incident-history-heading">
@@ -25,7 +29,7 @@ export default function IncidentHistoryPanel({
           <p className="panel__eyebrow">Your workspace</p>
           <h2 id="incident-history-heading">Saved incident history</h2>
           <p className="panel__helper">
-            Every analyzed incident is stored to your account. Open a full report view in a later release.
+            Every analyzed incident is stored to your account. Select one to review context and report versions.
           </p>
         </div>
         <button
@@ -66,8 +70,10 @@ export default function IncidentHistoryPanel({
         <ul className="history-list">
           {incidents.map((incident) => (
             <li key={incident.id}>
-              <article
-                className={`history-card${activeIncidentId === incident.id ? " history-card--active" : ""}`}
+              <button
+                type="button"
+                className={`history-card${selectedIncidentId === incident.id || activeIncidentId === incident.id ? " history-card--active" : ""}`}
+                onClick={() => onSelectIncident(incident.id)}
               >
                 <div className="history-card__content">
                   <h3 className="history-card__title">{incident.title}</h3>
@@ -93,7 +99,7 @@ export default function IncidentHistoryPanel({
                     <span className="history-card__versions">{incident.reportCount} versions</span>
                   ) : null}
                 </div>
-              </article>
+              </button>
             </li>
           ))}
         </ul>

@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ChangeEvent, FormEvent, PropsWithChildren } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { ApiError, analyzeIncident, refineIncident } from "./api";
 import AssistantBot from "./components/AssistantBot";
+import IncidentDetailView from "./components/IncidentDetailView";
 import IncidentHistoryPanel from "./components/IncidentHistoryPanel";
+import TriageReportPanel from "./components/TriageReportPanel";
+import {
+  fetchSavedIncidentDetail,
+  type SavedIncidentDetail
+} from "./incidentDetail";
 import { INCIDENT_LIMITS } from "./incidentLimits";
 import {
   fetchSavedIncidents,
@@ -100,8 +106,17 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
   const [savedIncidents, setSavedIncidents] = useState<SavedIncidentSummary[]>([]);
   const [historyPhase, setHistoryPhase] = useState<"loading" | "ready" | "error">("loading");
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [openedIncidentDetail, setOpenedIncidentDetail] = useState<SavedIncidentDetail | null>(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const [selectedReportVersion, setSelectedReportVersion] = useState<number | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const reportIsStale = Boolean(report && lastSubmittedIncident && !incidentsMatch(lastSubmittedIncident, formValues));
+  const reportIsStale = Boolean(
+    !openedIncidentDetail &&
+      report &&
+      lastSubmittedIncident &&
+      !incidentsMatch(lastSubmittedIncident, formValues)
+  );
   const assistantState = resolveAssistantState(requestPhase, report?.severity, apiError);
   const busy = requestPhase === "analyzing" || requestPhase === "refining";
   const logsLength = formValues.logsOrStackTrace.length;
@@ -129,6 +144,74 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
     void refreshHistory();
   }, [refreshHistory]);
 
+  function applyReportVersion(detail: SavedIncidentDetail, version: number) {
+    const entry = detail.reports.find((reportVersion) => reportVersion.version === version);
+    if (!entry) {
+      return;
+    }
+
+    setSelectedReportVersion(version);
+    setFormValues(detail.context);
+    setLastSubmittedIncident(detail.context);
+    setPersistedIncidentId(detail.id);
+    setReport(entry.report);
+    setFollowUpAnswers(createEmptyAnswers(entry.report.clarifyingQuestions));
+    setRequestPhase("success");
+    setApiError(null);
+  }
+
+  async function reloadOpenedIncident(incidentId: string) {
+    if (!supabase) {
+      return;
+    }
+
+    const detail = await fetchSavedIncidentDetail(supabase, incidentId);
+    setOpenedIncidentDetail(detail);
+    applyReportVersion(detail, detail.latestVersion);
+  }
+
+  async function handleOpenIncident(incidentId: string) {
+    if (!supabase) {
+      return;
+    }
+
+    setDetailLoading(true);
+    setSelectedIncidentId(incidentId);
+    setApiError(null);
+    setPersistWarning(null);
+
+    try {
+      const detail = await fetchSavedIncidentDetail(supabase, incidentId);
+      setOpenedIncidentDetail(detail);
+      applyReportVersion(detail, detail.latestVersion);
+      setStatusMessage(`Opened saved incident: ${detail.context.title}`);
+    } catch (error) {
+      setOpenedIncidentDetail(null);
+      setSelectedIncidentId(null);
+      setSelectedReportVersion(null);
+      setApiError(resolveHistoryError(error));
+      setStatusMessage("Could not open the saved incident.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  function handleCloseDetail() {
+    setOpenedIncidentDetail(null);
+    setSelectedIncidentId(null);
+    setSelectedReportVersion(null);
+    setDetailLoading(false);
+    handleResetIncident();
+  }
+
+  function handleSelectReportVersion(version: number) {
+    if (!openedIncidentDetail) {
+      return;
+    }
+
+    applyReportVersion(openedIncidentDetail, version);
+  }
+
   async function handleAnalyzeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const validationErrors = validateIncidentForm(formValues);
@@ -144,6 +227,9 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
     setApiError(null);
     setFieldErrors({});
     setStatusMessage("Analyzing incident context.");
+    setOpenedIncidentDetail(null);
+    setSelectedIncidentId(null);
+    setSelectedReportVersion(null);
 
     try {
       const nextReport = await analyzeIncident(formValues);
@@ -218,6 +304,11 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
         try {
           await persistRefineResult(supabase, userId, persistedIncidentId, nextReport, answers);
           await refreshHistory();
+          if (openedIncidentDetail) {
+            setDetailLoading(true);
+            await reloadOpenedIncident(persistedIncidentId);
+            setDetailLoading(false);
+          }
         } catch (error) {
           setPersistWarning(resolvePersistenceWarning(error));
         }
@@ -253,6 +344,10 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
     setFollowUpAnswers({});
     setPersistedIncidentId(null);
     setPersistWarning(null);
+    setOpenedIncidentDetail(null);
+    setSelectedIncidentId(null);
+    setSelectedReportVersion(null);
+    setDetailLoading(false);
     setStatusMessage("Ready for a new incident.");
   }
 
@@ -374,9 +469,31 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
         phase={historyPhase}
         errorMessage={historyError}
         activeIncidentId={persistedIncidentId}
+        selectedIncidentId={selectedIncidentId}
         onRefresh={refreshHistory}
+        onSelectIncident={handleOpenIncident}
       />
 
+      {openedIncidentDetail && selectedReportVersion !== null && report ? (
+        <IncidentDetailView
+          detail={openedIncidentDetail}
+          selectedVersion={selectedReportVersion}
+          report={report}
+          assistantState={assistantState}
+          busy={busy}
+          requestPhase={requestPhase}
+          followUpAnswers={followUpAnswers}
+          apiError={apiError}
+          persistWarning={persistWarning}
+          detailLoading={detailLoading}
+          onBack={handleCloseDetail}
+          onSelectVersion={handleSelectReportVersion}
+          onFollowUpChange={updateFollowUp}
+          onRefine={handleRefineSubmit}
+          onCopySummary={copySummary}
+          onExportMarkdown={exportMarkdown}
+        />
+      ) : (
       <section className="workspace-grid">
         <form
           className="panel panel--form"
@@ -549,83 +666,23 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
           ) : null}
 
           {report ? (
-            <div className="results-stack">
-              <div className="report-topline">
-                <SeverityBadge severity={report.severity} />
-                <div className="report-topline__actions">
-                  <button className="secondary-button" type="button" onClick={copySummary}>
-                    Copy summary
-                  </button>
-                  <button className="secondary-button" type="button" onClick={exportMarkdown}>
-                    Export markdown
-                  </button>
-                </div>
-              </div>
-
-              <ResultCard title="Summary">
-                <p>{report.summary}</p>
-              </ResultCard>
-
-              <div className="metric-grid">
-                <ResultCard title="Suspected component">
-                  <p>{report.suspectedComponent}</p>
-                </ResultCard>
-                <ResultCard title="Confidence">
-                  <p>{Math.round(report.confidence * 100)}%</p>
-                  <p className="result-card__note">
-                    How strongly the available evidence supports this report. Lower values mean more missing context.
-                  </p>
-                </ResultCard>
-              </div>
-
-              <div className="metric-grid">
-                <ResultCard title="Probable causes">
-                  <ListBlock items={report.probableCauses} emptyLabel="No probable causes were returned." />
-                </ResultCard>
-                <ResultCard title="Next steps">
-                  <OrderedListBlock items={report.nextSteps} emptyLabel="No next steps were returned." />
-                </ResultCard>
-              </div>
-
-              {report.clarifyingQuestions.length > 0 ? (
-                <ResultCard title="Refine the analysis">
-                  <p className="result-card__note">
-                    Answer the questions you can. Unanswered questions are skipped and can be handled in a later
-                    refinement pass.
-                  </p>
-                  <div className="follow-up-stack">
-                    {report.clarifyingQuestions.map((question, index) => (
-                      <div className="field" key={`${index}:${question}`}>
-                        <label className="field__label" htmlFor={`follow-up-${index}`}>
-                          {question}
-                        </label>
-                        <textarea
-                          id={`follow-up-${index}`}
-                          className="field__input field__input--textarea"
-                          value={followUpAnswers[`${index}:${question}`] ?? ""}
-                          onChange={(event) => updateFollowUp(`${index}:${question}`, event.target.value)}
-                          rows={3}
-                          placeholder="Add the missing evidence or answer here. Leave blank to skip for now."
-                        />
-                      </div>
-                    ))}
-                    <button className="primary-button" type="button" onClick={handleRefineSubmit} disabled={busy}>
-                      {requestPhase === "refining" ? "Refining..." : "Refine analysis"}
-                    </button>
-                  </div>
-                </ResultCard>
-              ) : (
-                <ResultCard title="Follow-up">
-                  <p>
-                    The model had enough context to produce a first-pass report without follow-up questions. Update
-                    the incident form and analyze again if new evidence arrives.
-                  </p>
-                </ResultCard>
-              )}
-            </div>
+            <TriageReportPanel
+              report={report}
+              viewingLatest
+              selectedVersion={1}
+              latestVersion={1}
+              busy={busy}
+              requestPhase={requestPhase}
+              followUpAnswers={followUpAnswers}
+              onFollowUpChange={updateFollowUp}
+              onRefine={handleRefineSubmit}
+              onCopySummary={copySummary}
+              onExportMarkdown={exportMarkdown}
+            />
           ) : null}
         </section>
       </section>
+      )}
     </main>
   );
 
@@ -883,56 +940,6 @@ function Field({
         </span>
       ) : null}
     </div>
-  );
-}
-
-function ResultCard({ title, children }: PropsWithChildren<{ title: string }>) {
-  return (
-    <article className="result-card">
-      <div className="result-card__header">
-        <h3>{title}</h3>
-      </div>
-      <div className="result-card__body">{children}</div>
-    </article>
-  );
-}
-
-function ListBlock({ items, emptyLabel }: { items: string[]; emptyLabel: string }) {
-  if (items.length === 0) {
-    return <p>{emptyLabel}</p>;
-  }
-
-  return (
-    <ul className="result-list">
-      {items.map((item, index) => (
-        <li key={`${index}:${item}`}>{item}</li>
-      ))}
-    </ul>
-  );
-}
-
-function OrderedListBlock({ items, emptyLabel }: { items: string[]; emptyLabel: string }) {
-  if (items.length === 0) {
-    return <p>{emptyLabel}</p>;
-  }
-
-  return (
-    <ol className="result-list result-list--ordered">
-      {items.map((item, index) => (
-        <li key={`${index}:${item}`}>{item}</li>
-      ))}
-    </ol>
-  );
-}
-
-function SeverityBadge({ severity }: { severity: IncidentSeverity }) {
-  return (
-    <span
-      className={`severity-badge severity-badge--${severity.toLowerCase()}`}
-      aria-label={`Severity ${severity}`}
-    >
-      {severity}
-    </span>
   );
 }
 

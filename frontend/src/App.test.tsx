@@ -9,7 +9,8 @@ const {
   mockSignUp,
   mockPersistAnalyze,
   mockPersistRefine,
-  mockFetchSavedIncidents
+  mockFetchSavedIncidents,
+  mockFetchSavedIncidentDetail
 } = vi.hoisted(() => ({
   mockGetSession: vi.fn(async () => ({
     data: {
@@ -36,7 +37,51 @@ const {
       latestSeverity: "HIGH",
       reportCount: 1
     }
-  ])
+  ]),
+  mockFetchSavedIncidentDetail: vi.fn(async () => ({
+    id: "incident-123",
+    createdAt: "2026-06-01T12:00:00.000Z",
+    updatedAt: "2026-06-01T12:00:00.000Z",
+    latestVersion: 2,
+    context: {
+      title: "Checkout failures",
+      serviceName: "payments",
+      environment: "production",
+      alertMessage: "HTTP 500 spike",
+      logsOrStackTrace: "java.net.UnknownHostException: db.internal",
+      recentDeployNotes: "Deployed build 204"
+    },
+    reports: [
+      {
+        version: 2,
+        createdAt: "2026-06-01T13:00:00.000Z",
+        followUpAnswers: [{ question: "Was there a deploy?", answer: "Yes" }],
+        report: {
+          summary: "Refined summary for checkout failures.",
+          severity: "HIGH",
+          suspectedComponent: "payment-adapter",
+          probableCauses: ["Bad database host"],
+          nextSteps: ["Rollback config"],
+          confidence: 0.9,
+          clarifyingQuestions: []
+        }
+      },
+      {
+        version: 1,
+        createdAt: "2026-06-01T12:00:00.000Z",
+        followUpAnswers: null,
+        report: {
+          summary: "Initial summary for checkout failures.",
+          severity: "MEDIUM",
+          suspectedComponent: "payment-adapter",
+          probableCauses: ["Possible DNS issue"],
+          nextSteps: ["Check DNS"],
+          confidence: 0.7,
+          clarifyingQuestions: ["Was there a deploy?"]
+        }
+      }
+    ]
+  }))
 }));
 
 vi.mock("./incidentHistory", () => ({
@@ -45,6 +90,10 @@ vi.mock("./incidentHistory", () => ({
   },
   fetchSavedIncidents: mockFetchSavedIncidents,
   formatIncidentDate: () => "Jun 1, 2026, 8:00 AM"
+}));
+
+vi.mock("./incidentDetail", () => ({
+  fetchSavedIncidentDetail: mockFetchSavedIncidentDetail
 }));
 
 vi.mock("./incidentPersistence", () => ({
@@ -84,6 +133,7 @@ afterEach(() => {
   mockPersistAnalyze.mockClear();
   mockPersistRefine.mockClear();
   mockFetchSavedIncidents.mockClear();
+  mockFetchSavedIncidentDetail.mockClear();
 });
 
 describe("App", () => {
@@ -126,6 +176,26 @@ describe("App", () => {
     expect(screen.getAllByText("HIGH").length).toBeGreaterThan(0);
     expect(screen.getByText("Did this begin immediately after the latest deployment?")).toBeInTheDocument();
     expect(screen.getByText(/20,000 characters/)).toBeInTheDocument();
+  });
+
+  it("opens a saved incident and shows report version history", async () => {
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+
+    const historyButton = screen
+      .getAllByRole("button")
+      .find((button) => button.textContent?.includes("Checkout failures"));
+    expect(historyButton).toBeDefined();
+    fireEvent.click(historyButton!);
+
+    await waitFor(() => expect(screen.getByText("Saved incident")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getAllByText("Refined summary for checkout failures.").length).toBeGreaterThan(0)
+    );
+    expect(screen.getByText(/Version 2 · Latest/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Version 1/i })).toBeInTheDocument();
+    expect(mockFetchSavedIncidentDetail).toHaveBeenCalledWith(expect.anything(), "incident-123");
   });
 
   it("loads saved incident history for the signed-in user", async () => {
@@ -204,9 +274,7 @@ describe("App", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(
-          "The model had enough context to produce a first-pass report without follow-up questions. Update the incident form and analyze again if new evidence arrives."
-        )
+        screen.getByText(/This version has no open clarifying questions/)
       ).toBeInTheDocument()
     );
   });
