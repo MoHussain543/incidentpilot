@@ -2,7 +2,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "./App";
 
-const { mockGetSession, mockSignIn, mockSignOut, mockSignUp, mockPersistAnalyze, mockPersistRefine } = vi.hoisted(() => ({
+const {
+  mockGetSession,
+  mockSignIn,
+  mockSignOut,
+  mockSignUp,
+  mockPersistAnalyze,
+  mockPersistRefine,
+  mockFetchSavedIncidents
+} = vi.hoisted(() => ({
   mockGetSession: vi.fn(async () => ({
     data: {
       session: {
@@ -17,7 +25,26 @@ const { mockGetSession, mockSignIn, mockSignOut, mockSignUp, mockPersistAnalyze,
   mockSignOut: vi.fn(),
   mockSignUp: vi.fn(),
   mockPersistAnalyze: vi.fn(async () => ({ incidentId: "incident-123", reportVersion: 1 })),
-  mockPersistRefine: vi.fn(async () => ({ incidentId: "incident-123", reportVersion: 2 }))
+  mockPersistRefine: vi.fn(async () => ({ incidentId: "incident-123", reportVersion: 2 })),
+  mockFetchSavedIncidents: vi.fn(async () => [
+    {
+      id: "incident-123",
+      title: "Checkout failures",
+      serviceName: "payments",
+      environment: "production",
+      createdAt: "2026-06-01T12:00:00.000Z",
+      latestSeverity: "HIGH",
+      reportCount: 1
+    }
+  ])
+}));
+
+vi.mock("./incidentHistory", () => ({
+  IncidentHistoryError: class IncidentHistoryError extends Error {
+    name = "IncidentHistoryError";
+  },
+  fetchSavedIncidents: mockFetchSavedIncidents,
+  formatIncidentDate: () => "Jun 1, 2026, 8:00 AM"
 }));
 
 vi.mock("./incidentPersistence", () => ({
@@ -56,6 +83,7 @@ afterEach(() => {
   mockSignUp.mockClear();
   mockPersistAnalyze.mockClear();
   mockPersistRefine.mockClear();
+  mockFetchSavedIncidents.mockClear();
 });
 
 describe("App", () => {
@@ -80,6 +108,8 @@ describe("App", () => {
 
     render(<App />);
 
+    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
     fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "HTTP 500 spike" } });
@@ -93,9 +123,19 @@ describe("App", () => {
       expect(screen.getByText("Checkout failures point to a payment adapter database host issue.")).toBeInTheDocument()
     );
 
-    expect(screen.getByText("HIGH")).toBeInTheDocument();
+    expect(screen.getAllByText("HIGH").length).toBeGreaterThan(0);
     expect(screen.getByText("Did this begin immediately after the latest deployment?")).toBeInTheDocument();
     expect(screen.getByText(/20,000 characters/)).toBeInTheDocument();
+  });
+
+  it("loads saved incident history for the signed-in user", async () => {
+    render(<App />);
+
+    expect(await screen.findByText("Saved incident history")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Checkout failures", level: 3 })).toBeInTheDocument()
+    );
+    expect(mockFetchSavedIncidents).toHaveBeenCalled();
   });
 
   it("shows client-side validation before calling the API", async () => {
@@ -118,6 +158,8 @@ describe("App", () => {
     );
 
     render(<App />);
+
+    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
 
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
@@ -190,6 +232,8 @@ describe("App", () => {
 
     render(<App />);
 
+    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
     fireEvent.change(screen.getByLabelText("Alert message"), { target: { value: "HTTP 500 spike" } });
@@ -237,6 +281,8 @@ describe("App", () => {
       );
 
     render(<App />);
+
+    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
 
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });

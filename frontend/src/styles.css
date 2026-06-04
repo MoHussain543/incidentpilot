@@ -208,6 +208,107 @@ button {
   color: #ffc6ba;
 }
 
+.panel--history {
+  padding: 1.25rem 1.45rem;
+  margin-bottom: 1.5rem;
+}
+
+.history-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.history-panel__loading {
+  padding: 0.5rem 0 0.25rem;
+}
+
+.history-panel__empty {
+  border: 1px dashed rgba(153, 191, 234, 0.18);
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  background: rgba(6, 12, 22, 0.72);
+}
+
+.history-panel__empty p {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.history-panel__empty-note {
+  margin-top: 0.45rem !important;
+  color: var(--text-muted) !important;
+  font-size: 0.92rem;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 16.5rem;
+  overflow-y: auto;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(153, 191, 234, 0.14);
+  border-radius: 1rem;
+  background: var(--panel-bg-strong);
+}
+
+.history-card--active {
+  border-color: rgba(98, 214, 255, 0.34);
+  box-shadow: 0 0 0 1px rgba(98, 214, 255, 0.12);
+}
+
+.history-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f7fbff;
+}
+
+.history-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.history-card__dot {
+  opacity: 0.7;
+}
+
+.history-card__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  min-width: 5.5rem;
+}
+
+.history-card__severity--unknown {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.history-card__versions {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 .workspace-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
@@ -804,6 +905,20 @@ button {
 
   .hero-status {
     width: 100%;
+  }
+
+  .history-panel__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-card__status {
+    align-items: flex-start;
   }
 }
 

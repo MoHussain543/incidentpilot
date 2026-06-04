@@ -48,6 +48,13 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
 - AI analysis still runs through the Spring Boot API; persistence happens after a successful response
 - If saving fails, the on-screen analysis still works and the UI shows a workspace save warning
 
+**Phase 2 history**
+
+- After sign-in, a **Saved incident history** panel lists the user's incidents (newest first)
+- Each row shows title, service, environment, created date, and latest report severity
+- History reloads on login, after successful analyze/refine saves, and via **Refresh**
+- RLS scopes reads to the signed-in user; no detail or full report-history pages yet
+
 ## API Contract
 
 ### `POST /api/v1/incidents/analyze`

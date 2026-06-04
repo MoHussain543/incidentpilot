@@ -1,9 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent, PropsWithChildren } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { ApiError, analyzeIncident, refineIncident } from "./api";
 import AssistantBot from "./components/AssistantBot";
+import IncidentHistoryPanel from "./components/IncidentHistoryPanel";
 import { INCIDENT_LIMITS } from "./incidentLimits";
+import {
+  fetchSavedIncidents,
+  IncidentHistoryError,
+  type SavedIncidentSummary
+} from "./incidentHistory";
 import {
   IncidentPersistenceError,
   persistAnalyzeResult,
@@ -91,12 +97,37 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
   const [statusMessage, setStatusMessage] = useState("");
   const [persistedIncidentId, setPersistedIncidentId] = useState<string | null>(null);
   const [persistWarning, setPersistWarning] = useState<string | null>(null);
+  const [savedIncidents, setSavedIncidents] = useState<SavedIncidentSummary[]>([]);
+  const [historyPhase, setHistoryPhase] = useState<"loading" | "ready" | "error">("loading");
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const reportIsStale = Boolean(report && lastSubmittedIncident && !incidentsMatch(lastSubmittedIncident, formValues));
   const assistantState = resolveAssistantState(requestPhase, report?.severity, apiError);
   const busy = requestPhase === "analyzing" || requestPhase === "refining";
   const logsLength = formValues.logsOrStackTrace.length;
   const logsNearLimit = logsLength > INCIDENT_LIMITS.logsOrStackTrace * 0.9;
+
+  const refreshHistory = useCallback(async () => {
+    if (!supabase) {
+      return;
+    }
+
+    setHistoryPhase("loading");
+    setHistoryError(null);
+
+    try {
+      const incidents = await fetchSavedIncidents(supabase);
+      setSavedIncidents(incidents);
+      setHistoryPhase("ready");
+    } catch (error) {
+      setHistoryPhase("error");
+      setHistoryError(resolveHistoryError(error));
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshHistory();
+  }, [refreshHistory]);
 
   async function handleAnalyzeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,6 +162,7 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
             nextReport
           );
           setPersistedIncidentId(persisted.incidentId);
+          await refreshHistory();
         } catch (error) {
           setPersistedIncidentId(null);
           setPersistWarning(resolvePersistenceWarning(error));
@@ -185,6 +217,7 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
       if (supabase) {
         try {
           await persistRefineResult(supabase, userId, persistedIncidentId, nextReport, answers);
+          await refreshHistory();
         } catch (error) {
           setPersistWarning(resolvePersistenceWarning(error));
         }
@@ -335,6 +368,14 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
       <p className="visually-hidden" aria-live="polite" aria-atomic="true">
         {statusMessage}
       </p>
+
+      <IncidentHistoryPanel
+        incidents={savedIncidents}
+        phase={historyPhase}
+        errorMessage={historyError}
+        activeIncidentId={persistedIncidentId}
+        onRefresh={refreshHistory}
+      />
 
       <section className="workspace-grid">
         <form
@@ -936,6 +977,13 @@ function statusLabel(
     return "Report ready";
   }
   return "Standing by";
+}
+
+function resolveHistoryError(error: unknown) {
+  if (error instanceof IncidentHistoryError) {
+    return error.message;
+  }
+  return "Saved incident history could not be loaded.";
 }
 
 function resolvePersistenceWarning(error: unknown) {
