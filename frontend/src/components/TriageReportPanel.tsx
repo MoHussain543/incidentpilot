@@ -13,6 +13,7 @@ type TriageReportPanelProps = {
   onRefine?: () => void;
   onCopySummary: () => void;
   onExportMarkdown: () => void;
+  compactHeader?: boolean;
 };
 
 export default function TriageReportPanel({
@@ -26,7 +27,8 @@ export default function TriageReportPanel({
   onFollowUpChange,
   onRefine,
   onCopySummary,
-  onExportMarkdown
+  onExportMarkdown,
+  compactHeader = false
 }: TriageReportPanelProps) {
   return (
     <div className="results-stack">
@@ -42,7 +44,9 @@ export default function TriageReportPanel({
 
       <div className="report-topline">
         <div className="report-topline__labels">
-          {viewingLatest ? <span className="report-version-tag report-version-tag--latest">Latest report</span> : null}
+          {!compactHeader && viewingLatest ? (
+            <span className="report-version-tag report-version-tag--latest">Latest report</span>
+          ) : null}
           <SeverityBadge severity={report.severity} />
         </div>
         <div className="report-topline__actions">

@@ -16,41 +16,59 @@ export default function ReportVersionList({
   onSelectVersion
 }: ReportVersionListProps) {
   return (
-    <section className="version-list" aria-label="Report version history">
-      <div className="version-list__header">
-        <p className="panel__eyebrow">Report history</p>
-        <h3>{reports.length} saved version{reports.length === 1 ? "" : "s"}</h3>
-        <p className="panel__helper">Newest first. Refinements append a version without overwriting earlier reports.</p>
+    <section className="version-timeline" aria-labelledby="investigation-timeline-heading">
+      <div className="version-timeline__header">
+        <p className="panel__eyebrow">Refinement history</p>
+        <h3 id="investigation-timeline-heading">Report versions</h3>
+        <p className="panel__helper">
+          Newest at the top. Each refinement adds a version without overwriting earlier analysis.
+        </p>
       </div>
 
-      <ol className="version-list__items">
-        {reports.map((entry) => {
+      <ol className="version-timeline__list">
+        {reports.map((entry, index) => {
           const isLatest = entry.version === latestVersion;
           const isSelected = entry.version === selectedVersion;
+          const isInitial = entry.version === 1;
+          const refinementLabel =
+            entry.followUpAnswers && entry.followUpAnswers.length > 0
+              ? `Refined · ${entry.followUpAnswers.length} answer(s)`
+              : isInitial
+                ? "Initial analysis"
+                : "Refinement";
 
           return (
-            <li key={entry.version}>
+            <li
+              key={entry.version}
+              className={`version-timeline__item${isLatest ? " version-timeline__item--latest" : ""}${isSelected ? " version-timeline__item--selected" : ""}`}
+            >
+              <span className="version-timeline__marker" aria-hidden="true">
+                <span className="version-timeline__dot" />
+                {index < reports.length - 1 ? <span className="version-timeline__line" /> : null}
+              </span>
+
               <button
                 type="button"
-                className={`version-card${isSelected ? " version-card--selected" : ""}${isLatest ? " version-card--latest" : ""}`}
+                className="version-timeline__card"
                 onClick={() => onSelectVersion(entry.version)}
                 aria-pressed={isSelected}
+                aria-label={`Version ${entry.version}${isLatest ? ", latest" : ""}, ${entry.report.severity} severity`}
               >
-                <div className="version-card__topline">
-                  <span className="version-card__label">
-                    Version {entry.version}
-                    {isLatest ? " · Latest" : ""}
-                  </span>
+                <div className="version-timeline__card-top">
+                  <div className="version-timeline__labels">
+                    <span className="version-timeline__version">
+                      Version {entry.version}
+                      {isLatest ? " · Latest" : ""}
+                    </span>
+                    {isLatest ? <span className="version-timeline__latest-pill">Current</span> : null}
+                  </div>
                   <SeverityBadge severity={entry.report.severity} />
                 </div>
-                <p className="version-card__summary">{entry.report.summary}</p>
-                <p className="version-card__meta">
+
+                <p className="version-timeline__kind">{refinementLabel}</p>
+                <p className="version-timeline__summary">{entry.report.summary}</p>
+                <p className="version-timeline__meta">
                   <time dateTime={entry.createdAt}>{formatIncidentDate(entry.createdAt)}</time>
-                  {entry.followUpAnswers && entry.followUpAnswers.length > 0 ? (
-                    <span> · Refined with {entry.followUpAnswers.length} answer(s)</span>
-                  ) : entry.version === 1 ? (
-                    <span> · Initial analysis</span>
-                  ) : null}
                 </p>
               </button>
             </li>
@@ -62,5 +80,12 @@ export default function ReportVersionList({
 }
 
 function SeverityBadge({ severity }: { severity: IncidentSeverity }) {
-  return <span className={`severity-badge severity-badge--${severity.toLowerCase()}`}>{severity}</span>;
+  return (
+    <span
+      className={`severity-badge severity-badge--${severity.toLowerCase()}`}
+      aria-label={`Severity ${severity}`}
+    >
+      {severity}
+    </span>
+  );
 }

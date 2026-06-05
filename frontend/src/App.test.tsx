@@ -177,7 +177,7 @@ describe("App", () => {
       .find((button) => button.textContent?.includes("Checkout failures"));
     fireEvent.click(historyButton!);
 
-    await waitFor(() => expect(screen.getByText("Saved incident")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Investigation workspace")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Back to all reports" }));
     expect(await screen.findByText("Your saved reports")).toBeInTheDocument();
   });
@@ -255,11 +255,12 @@ describe("App", () => {
     expect(historyButton).toBeDefined();
     fireEvent.click(historyButton!);
 
-    await waitFor(() => expect(screen.getByText("Saved incident")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Investigation workspace")).toBeInTheDocument());
     await waitFor(() =>
       expect(screen.getAllByText("Refined summary for checkout failures.").length).toBeGreaterThan(0)
     );
     expect(screen.getByText(/Version 2 · Latest/)).toBeInTheDocument();
+    expect(screen.getByText("Current")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Version 1/i })).toBeInTheDocument();
     expect(mockFetchSavedIncidentDetail).toHaveBeenCalledWith(expect.anything(), "user-123", "incident-123");
   });

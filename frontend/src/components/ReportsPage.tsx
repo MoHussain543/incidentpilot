@@ -18,7 +18,6 @@ import {
   resolveHistoryError,
   resolvePersistenceWarning,
   slugify,
-  statusLabel,
   type RequestPhase
 } from "../workspaceShared";
 import IncidentDetailView from "./IncidentDetailView";
@@ -234,30 +233,26 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
   }
 
   return (
-    <div className="workspace-page workspace-page--reports">
-      <section className="workspace-page-header">
-        <div>
-          <p className="eyebrow">Saved investigations</p>
-          <h1>Reports</h1>
-          <p className="workspace-page-header__lede">
-            {viewingDetail
-              ? "Review incident context, browse report versions, and refine when new evidence arrives."
-              : "Your account-wide library of analyzed incidents — open any report to continue the investigation."}
-          </p>
-        </div>
-        <div className="workspace-page-header__status">
-          <span className={`status-pill status-pill--${assistantState}`}>
-            {viewingDetail
-              ? statusLabel(requestPhase, report?.severity, apiError)
-              : "Report library"}
-          </span>
-          <p className="workspace-page-header__note">
-            {savedIncidents.length > 0
-              ? `${savedIncidents.length} saved incident${savedIncidents.length === 1 ? "" : "s"} in your account.`
-              : "No saved reports yet. Run an analysis to populate this library."}
-          </p>
-        </div>
-      </section>
+    <div className={`workspace-page workspace-page--reports${viewingDetail ? " workspace-page--reports-detail" : ""}`}>
+      {!viewingDetail ? (
+        <section className="workspace-page-header">
+          <div>
+            <p className="eyebrow">Saved investigations</p>
+            <h1>Reports</h1>
+            <p className="workspace-page-header__lede">
+              Your account-wide library of analyzed incidents — open any report to continue the investigation.
+            </p>
+          </div>
+          <div className="workspace-page-header__status">
+            <span className="status-pill status-pill--ready">Report library</span>
+            <p className="workspace-page-header__note">
+              {savedIncidents.length > 0
+                ? `${savedIncidents.length} saved incident${savedIncidents.length === 1 ? "" : "s"} in your account.`
+                : "No saved reports yet. Run an analysis to populate this library."}
+            </p>
+          </div>
+        </section>
+      ) : null}
 
       <p className="visually-hidden" aria-live="polite" aria-atomic="true">
         {statusMessage}

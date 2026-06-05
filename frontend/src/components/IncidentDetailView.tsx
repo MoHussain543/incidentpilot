@@ -1,8 +1,10 @@
+import { formatIncidentDate } from "../incidentHistory";
+import type { SavedIncidentDetail } from "../incidentDetail";
+import { statusLabel } from "../workspaceShared";
 import AssistantBot from "./AssistantBot";
 import IncidentContextPanel from "./IncidentContextPanel";
 import ReportVersionList from "./ReportVersionList";
 import TriageReportPanel from "./TriageReportPanel";
-import type { SavedIncidentDetail } from "../incidentDetail";
 import type { IncidentTriageReport } from "../types";
 
 type IncidentDetailViewProps = {
@@ -45,47 +47,94 @@ export default function IncidentDetailView({
   onExportMarkdown
 }: IncidentDetailViewProps) {
   const viewingLatest = selectedVersion === detail.latestVersion;
+  const selectedEntry = detail.reports.find((entry) => entry.version === selectedVersion);
 
   return (
-    <section className="detail-layout">
-      <div className="detail-layout__toolbar">
-        <button className="secondary-button" type="button" onClick={onBack}>
-          {backLabel}
-        </button>
-        <div>
-          <p className="panel__eyebrow">Saved incident</p>
-          <h2 className="detail-layout__title">{detail.context.title}</h2>
-          <p className="detail-layout__meta">
-            {detail.context.serviceName} · {detail.context.environment}
+    <section className="investigation-workspace" aria-labelledby="investigation-title">
+      <header className="investigation-header">
+        <div className="investigation-header__top">
+          <button className="investigation-header__back secondary-button secondary-button--compact" type="button" onClick={onBack}>
+            {backLabel}
+          </button>
+          <p className="investigation-header__crumb">
+            Reports <span aria-hidden="true">/</span> {detail.context.title}
           </p>
         </div>
-      </div>
 
-      <div className="detail-grid">
-        <IncidentContextPanel
-          context={detail.context}
-          createdAt={detail.createdAt}
-          updatedAt={detail.updatedAt}
-        />
-
-        <section className="panel panel--results panel--detail" aria-busy={busy || detailLoading}>
-          <div className="results-hero">
-            <div>
-              <p className="panel__eyebrow">Saved analysis</p>
-              <h2>Report workspace</h2>
-              <p className="panel__helper">
-                Review prior refinements or continue from the latest report without losing earlier versions.
-              </p>
-            </div>
-            <AssistantBot state={assistantState} />
+        <div className="investigation-header__main">
+          <div className="investigation-header__identity">
+            <p className="eyebrow">Investigation workspace</p>
+            <h2 id="investigation-title" className="investigation-header__title">
+              {detail.context.title}
+            </h2>
+            <ul className="investigation-header__chips" aria-label="Incident metadata">
+              <li>{detail.context.serviceName}</li>
+              <li>{detail.context.environment}</li>
+              <li>
+                Opened <time dateTime={detail.updatedAt}>{formatIncidentDate(detail.updatedAt)}</time>
+              </li>
+              <li>
+                {detail.reports.length} version{detail.reports.length === 1 ? "" : "s"}
+              </li>
+            </ul>
           </div>
 
+          <div className="investigation-header__status">
+            <AssistantBot state={assistantState} />
+            <span className={`status-pill status-pill--${assistantState}`}>
+              {statusLabel(requestPhase, report.severity, apiError)}
+            </span>
+            <p className="investigation-header__status-note">
+              {viewingLatest
+                ? "Viewing the latest report. Refinement is available when clarifying questions remain."
+                : `Reading version ${selectedVersion}. Return to version ${detail.latestVersion} to refine.`}
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div className="investigation-layout">
+        <aside className="investigation-zone investigation-zone--context" aria-labelledby="investigation-context-heading">
+          <IncidentContextPanel
+            context={detail.context}
+            createdAt={detail.createdAt}
+            updatedAt={detail.updatedAt}
+          />
+        </aside>
+
+        <aside className="investigation-zone investigation-zone--timeline" aria-labelledby="investigation-timeline-heading">
           <ReportVersionList
             reports={detail.reports}
             latestVersion={detail.latestVersion}
             selectedVersion={selectedVersion}
             onSelectVersion={onSelectVersion}
           />
+        </aside>
+
+        <main className="investigation-zone investigation-zone--report" aria-labelledby="investigation-report-heading">
+          <div className="investigation-report__header">
+            <div>
+              <p className="panel__eyebrow" id="investigation-report-heading">
+                {viewingLatest ? "Latest report" : "Prior report"}
+              </p>
+              <h3 className="investigation-report__title">
+                Version {selectedVersion}
+                {viewingLatest ? (
+                  <span className="investigation-report__latest-badge">Latest</span>
+                ) : null}
+              </h3>
+              {selectedEntry ? (
+                <p className="panel__helper">
+                  Saved <time dateTime={selectedEntry.createdAt}>{formatIncidentDate(selectedEntry.createdAt)}</time>
+                  {selectedEntry.followUpAnswers && selectedEntry.followUpAnswers.length > 0
+                    ? ` · Refined with ${selectedEntry.followUpAnswers.length} follow-up answer(s)`
+                    : selectedEntry.version === 1
+                      ? " · Initial analysis"
+                      : ""}
+                </p>
+              ) : null}
+            </div>
+          </div>
 
           {apiError ? (
             <div className="message-banner message-banner--error" role="alert">
@@ -121,9 +170,10 @@ export default function IncidentDetailView({
               onRefine={viewingLatest ? onRefine : undefined}
               onCopySummary={onCopySummary}
               onExportMarkdown={onExportMarkdown}
+              compactHeader
             />
           )}
-        </section>
+        </main>
       </div>
     </section>
   );
