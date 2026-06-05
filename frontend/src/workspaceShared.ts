@@ -1,6 +1,7 @@
 import { IncidentAccessError } from "./incidentAccess";
 import { IncidentHistoryError } from "./incidentHistory";
 import { IncidentPersistenceError } from "./incidentPersistence";
+import type { SavedIncidentDetail } from "./incidentDetail";
 import type { AnalyzeIncidentRequest, IncidentSeverity, IncidentTriageReport } from "./types";
 
 export type RequestPhase = "idle" | "analyzing" | "refining" | "success" | "error";
@@ -74,6 +75,30 @@ export function resolvePersistenceWarning(error: unknown) {
     return `${error.message} The analysis is still visible here, but it was not saved to your account history.`;
   }
   return "The analysis completed, but it could not be saved to your account history.";
+}
+
+export function buildEphemeralIncidentDetail(
+  context: AnalyzeIncidentRequest,
+  report: IncidentTriageReport,
+  incidentId = "ephemeral"
+): SavedIncidentDetail {
+  const now = new Date().toISOString();
+
+  return {
+    id: incidentId,
+    createdAt: now,
+    updatedAt: now,
+    context,
+    latestVersion: 1,
+    reports: [
+      {
+        version: 1,
+        createdAt: now,
+        followUpAnswers: null,
+        report
+      }
+    ]
+  };
 }
 
 export function createEmptyAnswers(questions: string[]) {

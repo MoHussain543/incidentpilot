@@ -85,29 +85,33 @@ export default function TriageReportPanel({
       </div>
 
       {viewingLatest && report.clarifyingQuestions.length > 0 && onRefine ? (
-        <ResultCard title="Refine the analysis">
+        <ResultCard title="Help narrow the root cause">
           <p className="result-card__note">
-            Answer the questions you can. Unanswered questions are skipped and can be handled in a later refinement
-            pass.
+            IncidentPilot needs more evidence to tighten the diagnosis. Answer what you know now — each refinement
+            creates a new report version with updated causes and next steps.
           </p>
           <div className="follow-up-stack">
             {report.clarifyingQuestions.map((question, index) => (
-              <div className="field" key={`${index}:${question}`}>
-                <label className="field__label" htmlFor={`follow-up-${index}`}>
+              <div className="follow-up-item" key={`${index}:${question}`}>
+                <p className="follow-up-item__question">
+                  <span className="follow-up-item__index">Q{index + 1}</span>
                   {question}
+                </p>
+                <label className="visually-hidden" htmlFor={`follow-up-${index}`}>
+                  Answer for question {index + 1}
                 </label>
                 <textarea
                   id={`follow-up-${index}`}
-                  className="field__input field__input--textarea"
+                  className="field__input field__input--textarea follow-up-item__answer"
                   value={followUpAnswers[`${index}:${question}`] ?? ""}
                   onChange={(event) => onFollowUpChange(`${index}:${question}`, event.target.value)}
                   rows={3}
-                  placeholder="Add the missing evidence or answer here. Leave blank to skip for now."
+                  placeholder="Paste logs, metrics, deploy timing, or anything that answers this question. Leave blank to skip."
                 />
               </div>
             ))}
             <button className="primary-button" type="button" onClick={onRefine} disabled={busy}>
-              {requestPhase === "refining" ? "Refining..." : "Refine analysis"}
+              {requestPhase === "refining" ? "Refining..." : "Submit evidence and refine"}
             </button>
           </div>
         </ResultCard>

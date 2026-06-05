@@ -7,23 +7,30 @@ type ReportVersionListProps = {
   latestVersion: number;
   selectedVersion: number;
   onSelectVersion: (version: number) => void;
+  showHeader?: boolean;
 };
 
 export default function ReportVersionList({
   reports,
   latestVersion,
   selectedVersion,
-  onSelectVersion
+  onSelectVersion,
+  showHeader = true
 }: ReportVersionListProps) {
   return (
-    <section className="version-timeline" aria-labelledby="investigation-timeline-heading">
-      <div className="version-timeline__header">
-        <p className="panel__eyebrow">Refinement history</p>
-        <h3 id="investigation-timeline-heading">Report versions</h3>
-        <p className="panel__helper">
-          Newest at the top. Each refinement adds a version without overwriting earlier analysis.
-        </p>
-      </div>
+    <section
+      className={`version-timeline${showHeader ? "" : " version-timeline--embedded"}`}
+      aria-labelledby="investigation-timeline-heading"
+    >
+      {showHeader ? (
+        <div className="version-timeline__header">
+          <p className="panel__eyebrow">Refinement history</p>
+          <h3 id="investigation-timeline-heading">Report versions</h3>
+          <p className="panel__helper">
+            Newest at the top. Each refinement adds a version without overwriting earlier analysis.
+          </p>
+        </div>
+      ) : null}
 
       <ol className="version-timeline__list">
         {reports.map((entry, index) => {

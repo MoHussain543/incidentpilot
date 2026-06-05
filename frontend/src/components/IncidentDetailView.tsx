@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { formatIncidentDate } from "../incidentHistory";
 import type { SavedIncidentDetail } from "../incidentDetail";
 import { statusLabel } from "../workspaceShared";
@@ -22,7 +23,7 @@ type IncidentDetailViewProps = {
   backLabel?: string;
   onSelectVersion: (version: number) => void;
   onFollowUpChange: (questionKey: string, answer: string) => void;
-  onRefine: () => void;
+  onRefine?: () => void;
   onCopySummary: () => void;
   onExportMarkdown: () => void;
 };
@@ -48,6 +49,19 @@ export default function IncidentDetailView({
 }: IncidentDetailViewProps) {
   const viewingLatest = selectedVersion === detail.latestVersion;
   const selectedEntry = detail.reports.find((entry) => entry.version === selectedVersion);
+  const selectedIndex = detail.reports.findIndex((entry) => entry.version === selectedVersion);
+  const newerEntry = selectedIndex > 0 ? detail.reports[selectedIndex - 1] : null;
+  const olderEntry =
+    selectedIndex >= 0 && selectedIndex < detail.reports.length - 1 ? detail.reports[selectedIndex + 1] : null;
+  const hasRefinementHistory = detail.reports.length > 1;
+  const [historyExpanded, setHistoryExpanded] = useState(selectedVersion !== detail.latestVersion);
+  const [contextExpanded, setContextExpanded] = useState(false);
+
+  useEffect(() => {
+    if (selectedVersion !== detail.latestVersion) {
+      setHistoryExpanded(true);
+    }
+  }, [selectedVersion, detail.latestVersion]);
 
   return (
     <section className="investigation-workspace" aria-labelledby="investigation-title">
@@ -80,10 +94,12 @@ export default function IncidentDetailView({
           </div>
 
           <div className="investigation-header__status">
-            <AssistantBot state={assistantState} />
-            <span className={`status-pill status-pill--${assistantState}`}>
-              {statusLabel(requestPhase, report.severity, apiError)}
-            </span>
+            <div className="investigation-header__status-top">
+              <AssistantBot state={assistantState} />
+              <span className={`status-pill status-pill--${assistantState}`}>
+                {statusLabel(requestPhase, report.severity, apiError)}
+              </span>
+            </div>
             <p className="investigation-header__status-note">
               {viewingLatest
                 ? "Viewing the latest report. Refinement is available when clarifying questions remain."
@@ -94,23 +110,6 @@ export default function IncidentDetailView({
       </header>
 
       <div className="investigation-layout">
-        <aside className="investigation-zone investigation-zone--context" aria-labelledby="investigation-context-heading">
-          <IncidentContextPanel
-            context={detail.context}
-            createdAt={detail.createdAt}
-            updatedAt={detail.updatedAt}
-          />
-        </aside>
-
-        <aside className="investigation-zone investigation-zone--timeline" aria-labelledby="investigation-timeline-heading">
-          <ReportVersionList
-            reports={detail.reports}
-            latestVersion={detail.latestVersion}
-            selectedVersion={selectedVersion}
-            onSelectVersion={onSelectVersion}
-          />
-        </aside>
-
         <main className="investigation-zone investigation-zone--report" aria-labelledby="investigation-report-heading">
           <div className="investigation-report__header">
             <div>
@@ -174,6 +173,123 @@ export default function IncidentDetailView({
             />
           )}
         </main>
+
+        <aside className="investigation-zone investigation-zone--supporting">
+          <section className="panel investigation-support">
+            <div className="investigation-support__header">
+              <div>
+                <p className="panel__eyebrow">Refinement history</p>
+                <h3 id="investigation-timeline-heading">
+                  Version {selectedVersion} of {detail.reports.length}
+                </h3>
+                <p className="panel__helper">
+                  {selectedEntry ? (
+                    <>
+                      Saved <time dateTime={selectedEntry.createdAt}>{formatIncidentDate(selectedEntry.createdAt)}</time>
+                      {selectedEntry.followUpAnswers && selectedEntry.followUpAnswers.length > 0
+                        ? ` · ${selectedEntry.followUpAnswers.length} follow-up answer(s)`
+                        : selectedEntry.version === 1
+                          ? " · Initial analysis"
+                          : ""}
+                    </>
+                  ) : (
+                    "Each refinement creates a new report version without overwriting earlier analysis."
+                  )}
+                </p>
+              </div>
+
+              {hasRefinementHistory ? (
+                <button
+                  className="secondary-button secondary-button--compact"
+                  type="button"
+                  onClick={() => setHistoryExpanded((current) => !current)}
+                  aria-expanded={historyExpanded}
+                  aria-controls="report-version-history"
+                >
+                  {historyExpanded ? "Hide timeline" : "View all versions"}
+                </button>
+              ) : null}
+            </div>
+
+            <div className="investigation-support__actions">
+              <button
+                className="secondary-button secondary-button--compact"
+                type="button"
+                onClick={() => newerEntry && onSelectVersion(newerEntry.version)}
+                disabled={!newerEntry}
+              >
+                Newer version
+              </button>
+              <button
+                className="secondary-button secondary-button--compact"
+                type="button"
+                onClick={() => olderEntry && onSelectVersion(olderEntry.version)}
+                disabled={!olderEntry}
+              >
+                Older version
+              </button>
+            </div>
+
+            {hasRefinementHistory ? (
+              <div
+                id="report-version-history"
+                className={`investigation-support__content${historyExpanded ? "" : " investigation-support__content--collapsed"}`}
+              >
+                <ReportVersionList
+                  reports={detail.reports}
+                  latestVersion={detail.latestVersion}
+                  selectedVersion={selectedVersion}
+                  onSelectVersion={onSelectVersion}
+                  showHeader={false}
+                />
+              </div>
+            ) : (
+              <p className="investigation-support__empty">This incident has one report version so far.</p>
+            )}
+          </section>
+
+          <section className="panel investigation-support">
+            <div className="investigation-support__header">
+              <div>
+                <p className="panel__eyebrow">Original signal</p>
+                <h3 id="investigation-context-heading">Incident context</h3>
+                <p className="panel__helper">
+                  Kept on hand for handoffs, but tucked away so the latest report stays in focus.
+                </p>
+              </div>
+
+              <button
+                className="secondary-button secondary-button--compact"
+                type="button"
+                onClick={() => setContextExpanded((current) => !current)}
+                aria-expanded={contextExpanded}
+                aria-controls="incident-context-panel"
+              >
+                {contextExpanded ? "Hide context" : "View original context"}
+              </button>
+            </div>
+
+            <ul className="investigation-support__snapshot" aria-label="Incident snapshot">
+              <li>{detail.context.serviceName}</li>
+              <li>{detail.context.environment}</li>
+              <li>
+                Alert: {detail.context.alertMessage.length > 80
+                  ? `${detail.context.alertMessage.slice(0, 80).trimEnd()}...`
+                  : detail.context.alertMessage}
+              </li>
+            </ul>
+
+            {contextExpanded ? (
+              <div id="incident-context-panel" className="investigation-support__content">
+                <IncidentContextPanel
+                  context={detail.context}
+                  createdAt={detail.createdAt}
+                  updatedAt={detail.updatedAt}
+                />
+              </div>
+            ) : null}
+          </section>
+        </aside>
       </div>
     </section>
   );
