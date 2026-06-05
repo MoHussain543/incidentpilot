@@ -61,7 +61,7 @@ export default function IncidentHistoryPanel({
         <div className="history-panel__empty">
           <p>No saved incidents yet.</p>
           <p className="history-panel__empty-note">
-            Run your first analysis below and it will appear here automatically.
+            Run your first analysis from New Analysis and it will appear here automatically.
           </p>
         </div>
       ) : null}

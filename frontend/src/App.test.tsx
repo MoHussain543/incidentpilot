@@ -136,6 +136,11 @@ afterEach(() => {
   mockFetchSavedIncidentDetail.mockClear();
 });
 
+async function openReportsView() {
+  fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
+  await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+}
+
 describe("App", () => {
   it("shows the public landing page when signed out", async () => {
     mockGetSession.mockResolvedValueOnce({ data: { session: null } });
@@ -163,6 +168,16 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "← Back to home" })).toBeInTheDocument();
   });
 
+  it("shows the signed-in app shell with primary navigation", async () => {
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "New Analysis" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reports" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Account" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Incident intake", level: 1 })).toBeInTheDocument();
+    expect(screen.queryByText("Saved incident history")).not.toBeInTheDocument();
+  });
+
   it("submits the incident form and renders the triage report", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
@@ -184,7 +199,7 @@ describe("App", () => {
 
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+    await screen.findByRole("heading", { name: "Incident intake", level: 1 });
 
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
@@ -207,7 +222,7 @@ describe("App", () => {
   it("opens a saved incident and shows report version history", async () => {
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+    await openReportsView();
 
     const historyButton = screen
       .getAllByRole("button")
@@ -227,7 +242,7 @@ describe("App", () => {
   it("loads saved incident history for the signed-in user", async () => {
     render(<App />);
 
-    expect(await screen.findByText("Saved incident history")).toBeInTheDocument();
+    await openReportsView();
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Checkout failures", level: 3 })).toBeInTheDocument()
     );
@@ -255,7 +270,7 @@ describe("App", () => {
 
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+    await screen.findByRole("heading", { name: "Incident intake", level: 1 });
 
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
@@ -326,7 +341,7 @@ describe("App", () => {
 
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+    await screen.findByRole("heading", { name: "Incident intake", level: 1 });
 
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
@@ -376,7 +391,7 @@ describe("App", () => {
 
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+    await screen.findByRole("heading", { name: "Incident intake", level: 1 });
 
     fireEvent.change(await screen.findByLabelText("Incident title"), { target: { value: "Checkout failures" } });
     fireEvent.change(screen.getByLabelText("Service name"), { target: { value: "payments" } });
