@@ -137,6 +137,32 @@ afterEach(() => {
 });
 
 describe("App", () => {
+  it("shows the public landing page when signed out", async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: /Turn noisy production alerts into actionable triage/i
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
+    expect(screen.queryByText("Saved incident history")).not.toBeInTheDocument();
+  });
+
+  it("opens the sign-in gate from the landing page", async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+
+    render(<App />);
+
+    fireEvent.click((await screen.findAllByRole("button", { name: "Sign in" }))[0]!);
+
+    expect(await screen.findByRole("heading", { name: "Sign in", level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "← Back to home" })).toBeInTheDocument();
+  });
+
   it("submits the incident form and renders the triage report", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(

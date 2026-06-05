@@ -3,9 +3,12 @@ import type { ChangeEvent, FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { ApiError, analyzeIncident, refineIncident } from "./api";
 import { IncidentAccessError } from "./incidentAccess";
+import AuthGate from "./components/AuthGate";
 import AssistantBot from "./components/AssistantBot";
+import Field from "./components/Field";
 import IncidentDetailView from "./components/IncidentDetailView";
 import IncidentHistoryPanel from "./components/IncidentHistoryPanel";
+import LandingPage from "./components/LandingPage";
 import TriageReportPanel from "./components/TriageReportPanel";
 import {
   fetchSavedIncidentDetail,
@@ -46,6 +49,7 @@ const ENVIRONMENT_SUGGESTIONS = ["production", "staging", "development"];
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [publicAuthView, setPublicAuthView] = useState<null | "sign-in" | "sign-up">(null);
 
   useEffect(() => {
     if (!supabase) {
@@ -65,6 +69,9 @@ export default function App() {
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setAuthReady(true);
+      if (nextSession) {
+        setPublicAuthView(null);
+      }
     });
 
     return () => {
@@ -82,7 +89,22 @@ export default function App() {
   }
 
   if (!session) {
-    return <AuthGate />;
+    if (publicAuthView) {
+      return (
+        <AuthGate
+          key={publicAuthView}
+          initialMode={publicAuthView}
+          onBack={() => setPublicAuthView(null)}
+        />
+      );
+    }
+
+    return (
+      <LandingPage
+        onSignIn={() => setPublicAuthView("sign-in")}
+        onSignUp={() => setPublicAuthView("sign-up")}
+      />
+    );
   }
 
   return (
@@ -692,135 +714,6 @@ function IncidentWorkspace({ userId, userEmail }: { userId: string; userEmail: s
   }
 }
 
-function AuthGate() {
-  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [notice, setNotice] = useState("Create an account to save incidents and make IncidentPilot a real workspace.");
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!supabase) {
-      return;
-    }
-
-    setSubmitting(true);
-    setErrorMessage(null);
-
-    const normalizedEmail = email.trim().toLowerCase();
-    try {
-      if (mode === "sign-in") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password
-        });
-        if (error) {
-          throw error;
-        }
-      } else {
-        const { data, error } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password
-        });
-        if (error) {
-          throw error;
-        }
-
-        if (!data.session) {
-          setNotice("Check your email to confirm your account, then come back and sign in.");
-        } else {
-          setNotice("Account created. You are now signed in.");
-        }
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Authentication failed. Please try again.";
-      setErrorMessage(message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <main className="app-shell app-shell--auth">
-      <div className="app-shell__backdrop app-shell__backdrop--left" />
-      <div className="app-shell__backdrop app-shell__backdrop--right" />
-
-      <section className="auth-layout">
-        <div className="auth-copy">
-          <p className="eyebrow">Incident triage SaaS</p>
-          <h1>IncidentPilot</h1>
-          <p className="hero-copy">
-            Sign in to save incident investigations, build history over time, and turn the MVP into a persistent
-            ops workspace.
-          </p>
-          <ul className="auth-copy__list">
-            <li>Secure session handling with Supabase Auth</li>
-            <li>Room for saved incidents, reports, and account-level history</li>
-            <li>The existing AI triage workflow stays exactly where it is once you are signed in</li>
-          </ul>
-        </div>
-
-        <section className="panel panel--auth">
-          <div className="panel__header panel__header--stacked">
-            <div>
-              <p className="panel__eyebrow">{mode === "sign-in" ? "Welcome back" : "Create your workspace"}</p>
-              <h2>{mode === "sign-in" ? "Sign in" : "Create account"}</h2>
-            </div>
-            <p className="panel__helper">{notice}</p>
-          </div>
-
-          {errorMessage ? (
-            <div className="message-banner message-banner--error" role="alert">
-              <strong>Authentication issue</strong>
-              <p>{errorMessage}</p>
-            </div>
-          ) : null}
-
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <Field
-              id="auth-email"
-              label="Email"
-              value={email}
-              onChange={setEmail}
-              placeholder="you@company.com"
-            />
-            <Field
-              id="auth-password"
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              placeholder="Choose a strong password"
-            />
-
-            <div className="panel__actions panel__actions--stacked">
-              <button className="primary-button" type="submit" disabled={submitting}>
-                {submitting ? "Working..." : mode === "sign-in" ? "Sign in" : "Create account"}
-              </button>
-              <button
-                className="secondary-button secondary-button--compact"
-                type="button"
-                onClick={() => {
-                  setMode((current) => (current === "sign-in" ? "sign-up" : "sign-in"));
-                  setErrorMessage(null);
-                  setNotice(
-                    mode === "sign-in"
-                      ? "Use a strong password. Supabase will create the linked profile record automatically."
-                      : "Create an account to save incidents and make IncidentPilot a real workspace."
-                  );
-                }}
-              >
-                {mode === "sign-in" ? "Need an account?" : "Already have an account?"}
-              </button>
-            </div>
-          </form>
-        </section>
-      </section>
-    </main>
-  );
-}
-
 function SupabaseConfigNotice() {
   return (
     <main className="app-shell app-shell--auth">
@@ -865,82 +758,6 @@ function LoadingShell({ message }: { message: string }) {
         </section>
       </section>
     </main>
-  );
-}
-
-type FieldProps = {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  error?: string;
-  hint?: string;
-  hintTone?: "default" | "warning";
-  multiline?: boolean;
-  rows?: number;
-  list?: string;
-};
-
-function Field({
-  id,
-  label,
-  value,
-  onChange,
-  placeholder,
-  error,
-  hint,
-  hintTone = "default",
-  multiline = false,
-  rows = 4,
-  list
-}: FieldProps) {
-  const errorId = `${id}-error`;
-  const hintId = `${id}-hint`;
-  const describedBy = [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined;
-
-  return (
-    <div className="field">
-      <label className="field__label" htmlFor={id}>
-        {label}
-      </label>
-      {multiline ? (
-        <textarea
-          id={id}
-          className="field__input field__input--textarea"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          aria-invalid={Boolean(error)}
-          aria-describedby={describedBy}
-        />
-      ) : (
-        <input
-          id={id}
-          className="field__input"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          list={list}
-          aria-invalid={Boolean(error)}
-          aria-describedby={describedBy}
-        />
-      )}
-      {hint ? (
-        <span
-          id={hintId}
-          className={`field__hint${hintTone === "warning" ? " field__hint--warning" : ""}`}
-        >
-          {hint}
-        </span>
-      ) : null}
-      {error ? (
-        <span id={errorId} className="field__error" role="alert">
-          {error}
-        </span>
-      ) : null}
-    </div>
   );
 }
 
