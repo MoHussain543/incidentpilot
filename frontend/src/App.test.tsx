@@ -168,6 +168,23 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "← Back to home" })).toBeInTheDocument();
   });
 
+  it("keeps the sign-in password hidden until show password is clicked", async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } } as never);
+
+    render(<App />);
+
+    fireEvent.click((await screen.findAllByRole("button", { name: "Sign in" }))[0]!);
+
+    const passwordInput = await screen.findByLabelText("Password");
+    expect(passwordInput).toHaveAttribute("type", "password");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show password" }));
+    expect(passwordInput).toHaveAttribute("type", "text");
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(passwordInput).toHaveAttribute("type", "password");
+  });
+
   it("returns to the reports dashboard from incident detail", async () => {
     render(<App />);
     await openReportsView();
@@ -190,6 +207,20 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /Open account menu for tester@example.com/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Incident intake", level: 1 })).toBeInTheDocument();
     expect(screen.queryByText("Your saved reports")).not.toBeInTheDocument();
+  });
+
+  it("opens the signed-in landing page from the brand button", async () => {
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "IncidentPilot" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: /Turn noisy production alerts into actionable triage/i
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open analysis" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View reports" })).toBeInTheDocument();
   });
 
   it("opens the account menu with workspace links and logout", async () => {

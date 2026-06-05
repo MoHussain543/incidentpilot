@@ -13,6 +13,7 @@ export default function AuthGate({ initialMode, onBack }: AuthGateProps) {
   const [mode, setMode] = useState<"sign-in" | "sign-up">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState(
@@ -67,6 +68,7 @@ export default function AuthGate({ initialMode, onBack }: AuthGateProps) {
     setMode((current) => {
       const next = current === "sign-in" ? "sign-up" : "sign-in";
       setErrorMessage(null);
+      setShowPassword(false);
       setNotice(
         next === "sign-in"
           ? "Sign in to open your saved incidents and triage workspace."
@@ -132,13 +134,31 @@ export default function AuthGate({ initialMode, onBack }: AuthGateProps) {
                 onChange={setEmail}
                 placeholder="you@company.com"
               />
-              <Field
-                id="auth-password"
-                label="Password"
-                value={password}
-                onChange={setPassword}
-                placeholder="Choose a strong password"
-              />
+              <div className="field">
+                <label className="field__label" htmlFor="auth-password">
+                  Password
+                </label>
+                <div className="auth-password-field">
+                  <input
+                    id="auth-password"
+                    className="field__input"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder={mode === "sign-in" ? "Enter your password" : "Choose a strong password"}
+                    autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                  />
+                  <button
+                    className="secondary-button secondary-button--compact auth-password-field__toggle"
+                    type="button"
+                    aria-pressed={showPassword}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((current) => !current)}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
 
               <div className="panel__actions panel__actions--stacked">
                 <button className="primary-button" type="submit" disabled={submitting}>

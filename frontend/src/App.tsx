@@ -113,7 +113,17 @@ function SignedInApp({ userId, userEmail }: { userId: string; userEmail: string 
       onNavigate={setActiveView}
       onSignOut={handleSignOut}
     >
-      {activeView === "analysis" ? (
+      {activeView === "landing" ? (
+        <LandingPage
+          embedded
+          onSignIn={() => setActiveView("reports")}
+          onSignUp={() => setActiveView("analysis")}
+          heroPrimaryLabel="Open analysis"
+          heroSecondaryLabel="View reports"
+          ctaPrimaryLabel="Start a new analysis"
+          ctaSecondaryLabel="Browse saved reports"
+        />
+      ) : activeView === "analysis" ? (
         <AnalysisWorkspace
           userId={userId}
           userEmail={userEmail}

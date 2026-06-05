@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import AccountMenu from "./AccountMenu";
 import ProductMark from "./ProductMark";
 
-export type AppView = "analysis" | "reports";
+export type AppView = "landing" | "analysis" | "reports";
 
 type AppShellProps = {
   activeView: AppView;
@@ -28,7 +28,7 @@ export default function AppShell({
         <button
           className="app-nav__brand"
           type="button"
-          onClick={() => onNavigate("analysis")}
+          onClick={() => onNavigate("landing")}
         >
           <ProductMark />
           <span className="app-nav__name">IncidentPilot</span>

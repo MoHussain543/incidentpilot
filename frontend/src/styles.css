@@ -1428,6 +1428,17 @@ button {
   flex-direction: column;
 }
 
+.auth-password-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.auth-password-field__toggle {
+  min-width: 4.75rem;
+}
+
 .config-block {
   margin: 0;
   padding: 1rem;
@@ -1546,6 +1557,14 @@ button {
   max-width: var(--content-max);
   margin: 0 auto;
   padding: 1.25rem var(--space-page-x) 3rem;
+}
+
+.workspace-home {
+  width: 100%;
+}
+
+.workspace-home__main {
+  padding-bottom: 1.5rem;
 }
 
 .landing__main--auth {
