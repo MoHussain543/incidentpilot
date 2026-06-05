@@ -29,11 +29,14 @@ export default function PublicNav({ onSignIn, onSignUp, onHome, active = "landin
           <a className="public-nav__link" href="#top">
             Home
           </a>
-          <a className="public-nav__link" href="#features">
-            Features
+          <a className="public-nav__link" href="#example">
+            Example
           </a>
-          <a className="public-nav__link" href="#how-it-works">
-            How it works
+          <a className="public-nav__link" href="#compare">
+            Why not chat?
+          </a>
+          <a className="public-nav__link" href="#included">
+            Included
           </a>
         </nav>
       ) : (

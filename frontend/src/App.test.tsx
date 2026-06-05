@@ -152,7 +152,7 @@ describe("App", () => {
         name: /Turn noisy production alerts into actionable triage/i
       })
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create workspace" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Create workspace" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
     expect(screen.queryByText("Your saved reports")).not.toBeInTheDocument();
   });
