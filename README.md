@@ -2,20 +2,35 @@
 
 IncidentPilot is a full-stack AI incident triage app that helps developers understand production issues faster, decide the next debugging steps, and refine an analysis when missing evidence is supplied later.
 
+**Live deployment**
+
+- Frontend: [incidentpilot.vercel.app](https://incidentpilot.vercel.app)
+- Backend API: `https://incidentpilot-production.up.railway.app`
+
 ## What It Does
 
-- Accepts structured incident context from a web UI
+- Accepts structured incident context from a dedicated intake page
+- Runs analysis through a focused loading state, then opens an investigation workspace with the triage report
 - Calls the OpenAI Responses API with strict JSON schema output
 - Returns a typed triage report with summary, severity, suspected component, probable causes, next steps, confidence, and clarifying questions
-- Supports a follow-up refinement loop instead of a generic chatbot flow
+- Supports a follow-up refinement loop that creates new report versions instead of overwriting earlier analysis
 - Accepts `.log`, `.txt`, and `.md` files on the frontend by folding their text into the incident context
-- Persists analyzed incidents and versioned AI reports to Supabase for the signed-in user (Phase 1)
+- Persists analyzed incidents and versioned AI reports to Supabase for the signed-in user
+
+## User Flow
+
+1. **Landing page** — public overview of the product, example incident, and sign-up/sign-in
+2. **Incident intake** — structured fields for title, service, environment, alert, logs, deploy notes, and optional file upload
+3. **Analyzing** — full-screen overlay while the backend reviews the signal
+4. **Investigation workspace** — report, clarifying questions, version timeline, export/copy actions
+5. **Refine** — submit new evidence to generate the next report version
+6. **Reports** — account-wide library of saved incidents; reopen any investigation to continue or review history
 
 ## Repo Layout
 
-- `backend/`: Spring Boot API for incident analysis and refinement
-- `frontend/`: Vite + React + TypeScript UI
-- `supabase/`: SQL migrations for profiles, incidents, and incident report versions
+- `backend/` — Spring Boot API for incident analysis, refinement, and Supabase JWT verification
+- `frontend/` — Vite + React + TypeScript UI
+- `supabase/` — SQL migrations for profiles, incidents, report versions, and ownership hardening
 
 ## Local Setup
 
@@ -23,60 +38,60 @@ IncidentPilot is a full-stack AI incident triage app that helps developers under
 
 1. `cd backend`
 2. Set environment variables:
-   - `OPENAI_API_KEY`
-   - `OPENAI_MODEL` optional, defaults to `gpt-5-mini`
-   - `APP_CORS_ALLOWED_ORIGINS` optional, defaults to `http://localhost:5173`
-   - `SUPABASE_URL` optional for local dev, required when backend JWT auth is enabled
-   - `APP_REQUIRE_AUTH=false` if you want to run the backend locally without Supabase JWT validation
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `OPENAI_API_KEY` | Yes | OpenAI API key used for analysis |
+| `OPENAI_MODEL` | No | Defaults to `gpt-5-mini` |
+| `APP_CORS_ALLOWED_ORIGINS` | No | Defaults to `http://localhost:5173` |
+| `SUPABASE_URL` | For auth | Project URL, e.g. `https://<ref>.supabase.co` |
+| `APP_REQUIRE_AUTH` | No | Set to `false` only for local dev without JWT checks |
+
 3. Run `./mvnw spring-boot:run`
 
 ### Frontend
 
 1. `cd frontend`
-2. Copy `.env.example` to `.env` and set Supabase + API values
+2. Copy `.env.example` to `.env` and set:
+
+| Variable | Example |
+|----------|---------|
+| `VITE_SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key |
+| `VITE_API_BASE_URL` | `http://localhost:8080` |
+
 3. Run `npm install`
 4. Run `npm run dev`
 
-### Supabase (Phase 1 persistence)
+### Supabase
 
-1. Apply `supabase/migrations/001_phase1_persistence.sql` in the Supabase SQL editor (see `supabase/README.md`)
-2. Ensure Email auth is enabled for your project
-3. The frontend saves data with the signed-in user's Supabase session (RLS enforces ownership)
+1. Apply migrations in order (see `supabase/README.md`):
+   - `supabase/migrations/001_phase1_persistence.sql`
+   - `supabase/migrations/002_phase4_ownership_hardening.sql`
+2. Enable Email auth for your project
+3. The frontend saves data with the signed-in user's Supabase session; RLS enforces ownership
 
 **Persistence behavior**
 
 - **Analyze** creates a new `incidents` row and `incident_reports` version `1`
 - **Refine** appends a new `incident_reports` row with the next version number for the same incident
-- AI analysis still runs through the Spring Boot API; persistence happens after a successful response
-- If saving fails, the on-screen analysis still works and the UI shows a workspace save warning
+- AI analysis runs through the Spring Boot API; persistence happens after a successful response
+- If saving fails, the investigation view still works and the UI shows a workspace save warning
 
-**Phase 2 history**
-
-- After sign-in, a **Saved incident history** panel lists the user's incidents (newest first)
-- Each row shows title, service, environment, created date, and latest report severity
-- History reloads on login, after successful analyze/refine saves, and via **Refresh**
-- RLS scopes reads to the signed-in user
-
-**Phase 3 incident detail**
-
-- Click a saved incident in history to open its detail workspace
-- View original incident context, latest report, and prior report versions (newest first)
-- Select an older version to read it; refine only from the latest version
-- **Back to new analysis** returns to the standard analyze/refine flow
-
-**Phase 4 security**
+**Security**
 
 - Supabase RLS + DB trigger enforce per-user incident ownership
 - Frontend verifies the signed-in user before every incident/report read or write
 - Spring Boot protects `/api/v1/incidents/*` with the signed-in Supabase access token when `SUPABASE_URL` is set
-- The backend verifies tokens against Supabase's JWKS endpoint (RS256 and ES256) and validates the expected issuer
+- The backend verifies tokens against Supabase JWKS (RS256 and ES256)
 - Set `SUPABASE_JWT_SECRET` only if your project still signs user tokens with the legacy HS256 JWT secret
-- `SUPABASE_JWT_ISSUER` and `SUPABASE_JWKS_URL` are available only if you need to override the derived defaults
 - Set `APP_REQUIRE_AUTH=false` only for local backend development without JWT validation
 
 ## API Contract
 
 ### `POST /api/v1/incidents/analyze`
+
+Requires `Authorization: Bearer <supabase-access-token>` when backend auth is enabled.
 
 Request body:
 
@@ -117,12 +132,71 @@ Response body:
 
 Takes the original incident request, the previous report, and user-supplied answers to follow-up questions, then returns the same structured response shape with updated conclusions.
 
-## Deployment Notes
+## Deployment
 
-- Frontend target: Vercel, with the root directory set to `frontend`
-- Backend target: Railway, with the root directory set to `backend`
-- Set `VITE_API_BASE_URL` in the frontend deployment to the Railway backend URL (no trailing slash)
-- Set `OPENAI_API_KEY`, `OPENAI_MODEL`, `SUPABASE_URL`, and `APP_CORS_ALLOWED_ORIGINS` in the backend deployment
-- `APP_CORS_ALLOWED_ORIGINS` must include your exact Vercel site URL, for example `https://incidentpilot.vercel.app`
-- If the browser shows `Preflight response is not successful. Status code: 403`, the frontend origin is missing from `APP_CORS_ALLOWED_ORIGINS`
-- A backend [Dockerfile](/Users/bilalhussain/Documents/GitHub/incidentpilot/backend/Dockerfile) is included for container-based Railway deployment
+### Frontend (Vercel)
+
+- Root directory: `frontend`
+- Framework preset: Vite
+- `frontend/vercel.json` is included
+
+| Variable | Value |
+|----------|-------|
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key |
+| `VITE_API_BASE_URL` | Railway backend URL, no trailing slash |
+
+Example:
+
+```bash
+VITE_API_BASE_URL=https://incidentpilot-production.up.railway.app
+```
+
+Redeploy Vercel after changing any `VITE_*` variable. Vite bakes these into the build at compile time.
+
+### Backend (Railway)
+
+- Root directory: `backend`
+- Uses the included [Dockerfile](backend/Dockerfile)
+
+| Variable | Value |
+|----------|-------|
+| `OPENAI_API_KEY` | Your OpenAI API key |
+| `OPENAI_MODEL` | Optional, defaults to `gpt-5-mini` |
+| `SUPABASE_URL` | Your Supabase project URL |
+| `APP_CORS_ALLOWED_ORIGINS` | Exact Vercel site URL |
+
+Example:
+
+```bash
+APP_CORS_ALLOWED_ORIGINS=https://incidentpilot.vercel.app
+```
+
+Railway sets `PORT` automatically. Redeploy after changing backend variables.
+
+### Deployment troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `Preflight response is not successful. Status code: 403` | Frontend origin not allowed by backend CORS | Set `APP_CORS_ALLOWED_ORIGINS` to your exact Vercel URL and redeploy Railway |
+| `Could not reach the IncidentPilot API` | Wrong `VITE_API_BASE_URL` or backend not running | Confirm Railway URL, rebuild/redeploy Vercel |
+| `The server is missing OPENAI_API_KEY` / HTTP 503 | Backend OpenAI key not configured | Set `OPENAI_API_KEY` on Railway and redeploy |
+| HTTP 401 on analyze | Missing or expired Supabase session token | Sign in again; confirm `SUPABASE_URL` on Railway |
+| HTTP 502 | OpenAI request failed | Check Railway logs, API key validity, and model name |
+
+Verify CORS after deploy:
+
+```bash
+curl -X OPTIONS "https://incidentpilot-production.up.railway.app/api/v1/incidents/analyze" \
+  -H "Origin: https://incidentpilot.vercel.app" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: authorization,content-type" -i
+```
+
+A successful preflight returns `200` and `access-control-allow-origin: https://incidentpilot.vercel.app`.
+
+## Development Notes
+
+- Frontend tests: `cd frontend && npm test`
+- Backend tests: `cd backend && ./mvnw test`
+- Investigation preview in dev: open the app with `?preview=investigation` to inspect the investigation workspace UI with sample data
