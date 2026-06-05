@@ -78,6 +78,7 @@ export default function AuthGate({ initialMode, onBack }: AuthGateProps) {
 
   return (
     <div className="landing landing--auth">
+      <div className="landing__backdrop landing__backdrop--grid" aria-hidden="true" />
       <div className="landing__backdrop landing__backdrop--glow" aria-hidden="true" />
 
       <PublicNav
@@ -87,7 +88,7 @@ export default function AuthGate({ initialMode, onBack }: AuthGateProps) {
         onSignUp={() => setMode("sign-up")}
       />
 
-      <main className="landing__main landing__main--auth">
+      <main className="landing__main landing__main--auth page-enter">
         <button className="landing-back-link" type="button" onClick={onBack}>
           ← Back to home
         </button>

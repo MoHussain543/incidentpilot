@@ -54,7 +54,7 @@ export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
 
       <PublicNav onSignIn={onSignIn} onSignUp={onSignUp} />
 
-      <main className="landing__main">
+      <main className="landing__main page-enter">
         <section className="landing-hero" id="hero">
           <div className="landing-hero__copy">
             <p className="eyebrow">AI incident triage for on-call engineers</p>

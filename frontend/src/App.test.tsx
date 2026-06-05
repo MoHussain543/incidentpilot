@@ -187,9 +187,45 @@ describe("App", () => {
 
     expect(await screen.findByRole("button", { name: "New Analysis" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reports" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Account" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Open account menu for tester@example.com/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Incident intake", level: 1 })).toBeInTheDocument();
     expect(screen.queryByText("Your saved reports")).not.toBeInTheDocument();
+  });
+
+  it("opens the account menu with workspace links and logout", async () => {
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Open account menu for tester@example.com/i })
+    );
+
+    expect(screen.getByRole("menu", { name: "Account menu" })).toBeInTheDocument();
+    expect(screen.getAllByText("tester@example.com").length).toBeGreaterThan(0);
+    expect(screen.getByRole("menuitem", { name: "New Analysis" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Reports" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument();
+  });
+
+  it("navigates to reports from the account menu", async () => {
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Open account menu for tester@example.com/i })
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Reports" }));
+
+    expect(await screen.findByText("Your saved reports")).toBeInTheDocument();
+  });
+
+  it("logs out from the account menu", async () => {
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Open account menu for tester@example.com/i })
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Log out" }));
+
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
   it("shows the reports dashboard with summary stats", async () => {

@@ -1,3 +1,5 @@
+import ProductMark from "./ProductMark";
+
 type PublicNavProps = {
   onSignIn: () => void;
   onSignUp: () => void;
@@ -18,10 +20,7 @@ export default function PublicNav({ onSignIn, onSignUp, onHome, active = "landin
           }
         }}
       >
-        <span className="public-nav__mark" aria-hidden="true">
-          <span className="public-nav__mark-core" />
-          <span className="public-nav__mark-ring" />
-        </span>
+        <ProductMark animated />
         <span className="public-nav__name">IncidentPilot</span>
       </a>
 

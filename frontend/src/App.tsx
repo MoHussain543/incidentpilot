@@ -106,47 +106,51 @@ function SignedInApp({ userId, userEmail }: { userId: string; userEmail: string 
 
 function SupabaseConfigNotice() {
   return (
-    <main className="app-shell app-shell--auth">
-      <div className="app-shell__backdrop app-shell__backdrop--left" />
-      <div className="app-shell__backdrop app-shell__backdrop--right" />
-      <section className="auth-layout">
-        <div className="auth-copy">
-          <p className="eyebrow">Supabase setup</p>
-          <h1>IncidentPilot</h1>
-          <p className="hero-copy">
-            Supabase auth is not configured yet. Add the publishable frontend credentials locally, then reload the app.
-          </p>
-        </div>
-
-        <section className="panel panel--auth">
-          <div className="panel__header panel__header--stacked">
-            <div>
-              <p className="panel__eyebrow">Missing environment variables</p>
-              <h2>Frontend config needed</h2>
-            </div>
+    <div className="landing landing--auth">
+      <div className="landing__backdrop landing__backdrop--grid" aria-hidden="true" />
+      <div className="landing__backdrop landing__backdrop--glow" aria-hidden="true" />
+      <main className="landing__main landing__main--auth page-enter">
+        <section className="auth-layout">
+          <div className="auth-copy">
+            <p className="eyebrow">Supabase setup</p>
+            <h1>IncidentPilot</h1>
+            <p className="hero-copy">
+              Supabase auth is not configured yet. Add the publishable frontend credentials locally, then reload the app.
+            </p>
           </div>
-          <pre className="config-block">VITE_SUPABASE_URL=...\nVITE_SUPABASE_PUBLISHABLE_KEY=...\nVITE_API_BASE_URL=http://localhost:8080</pre>
+
+          <section className="panel panel--auth">
+            <div className="panel__header panel__header--stacked">
+              <div>
+                <p className="panel__eyebrow">Missing environment variables</p>
+                <h2>Frontend config needed</h2>
+              </div>
+            </div>
+            <pre className="config-block">VITE_SUPABASE_URL=...\nVITE_SUPABASE_PUBLISHABLE_KEY=...\nVITE_API_BASE_URL=http://localhost:8080</pre>
+          </section>
         </section>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
 
 function LoadingShell({ message }: { message: string }) {
   return (
-    <main className="app-shell app-shell--auth">
-      <div className="app-shell__backdrop app-shell__backdrop--left" />
-      <div className="app-shell__backdrop app-shell__backdrop--right" />
-      <section className="auth-layout">
-        <section className="panel panel--auth">
-          <div className="loading-panel">
-            <div className="loading-panel__line" />
-            <div className="loading-panel__line loading-panel__line--medium" />
-            <div className="loading-panel__line loading-panel__line--short" />
-            <p>{message}</p>
-          </div>
+    <div className="landing landing--auth">
+      <div className="landing__backdrop landing__backdrop--grid" aria-hidden="true" />
+      <div className="landing__backdrop landing__backdrop--glow" aria-hidden="true" />
+      <main className="landing__main landing__main--auth page-enter">
+        <section className="auth-layout auth-layout--centered">
+          <section className="panel panel--auth">
+            <div className="loading-panel">
+              <div className="loading-panel__line" />
+              <div className="loading-panel__line loading-panel__line--medium" />
+              <div className="loading-panel__line loading-panel__line--short" />
+              <p>{message}</p>
+            </div>
+          </section>
         </section>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
