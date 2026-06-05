@@ -22,7 +22,7 @@ import {
   type RequestPhase
 } from "../workspaceShared";
 import IncidentDetailView from "./IncidentDetailView";
-import IncidentHistoryPanel from "./IncidentHistoryPanel";
+import ReportsDashboard from "./ReportsDashboard";
 
 type ReportsPageProps = {
   userId: string;
@@ -34,7 +34,6 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
   const [historyPhase, setHistoryPhase] = useState<"loading" | "ready" | "error">("loading");
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [openedIncidentDetail, setOpenedIncidentDetail] = useState<SavedIncidentDetail | null>(null);
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [selectedReportVersion, setSelectedReportVersion] = useState<number | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [report, setReport] = useState<IncidentTriageReport | null>(null);
@@ -47,6 +46,7 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
 
   const assistantState = resolveAssistantState(requestPhase, report?.severity, apiError);
   const busy = requestPhase === "refining";
+  const viewingDetail = Boolean(openedIncidentDetail && selectedReportVersion !== null && report);
 
   const refreshHistory = useCallback(async () => {
     if (!supabase) {
@@ -100,7 +100,6 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
     }
 
     setDetailLoading(true);
-    setSelectedIncidentId(incidentId);
     setApiError(null);
     setPersistWarning(null);
 
@@ -111,7 +110,6 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
       setStatusMessage(`Opened saved incident: ${detail.context.title}`);
     } catch (error) {
       setOpenedIncidentDetail(null);
-      setSelectedIncidentId(null);
       setSelectedReportVersion(null);
       setReport(null);
       setApiError(resolveHistoryError(error));
@@ -123,7 +121,6 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
 
   function handleCloseDetail() {
     setOpenedIncidentDetail(null);
-    setSelectedIncidentId(null);
     setSelectedReportVersion(null);
     setDetailLoading(false);
     setReport(null);
@@ -132,7 +129,7 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
     setRequestPhase("idle");
     setApiError(null);
     setPersistWarning(null);
-    setStatusMessage("Returned to report list.");
+    setStatusMessage("Returned to report library.");
   }
 
   function handleSelectReportVersion(version: number) {
@@ -237,18 +234,22 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
   }
 
   return (
-    <div className="workspace-page">
+    <div className="workspace-page workspace-page--reports">
       <section className="workspace-page-header">
         <div>
           <p className="eyebrow">Saved investigations</p>
           <h1>Reports</h1>
           <p className="workspace-page-header__lede">
-            Browse saved incidents, review report versions, and refine earlier analyses when new evidence arrives.
+            {viewingDetail
+              ? "Review incident context, browse report versions, and refine when new evidence arrives."
+              : "Your account-wide library of analyzed incidents — open any report to continue the investigation."}
           </p>
         </div>
         <div className="workspace-page-header__status">
           <span className={`status-pill status-pill--${assistantState}`}>
-            {openedIncidentDetail ? statusLabel(requestPhase, report?.severity, apiError) : "Report library"}
+            {viewingDetail
+              ? statusLabel(requestPhase, report?.severity, apiError)
+              : "Report library"}
           </span>
           <p className="workspace-page-header__note">
             {savedIncidents.length > 0
@@ -262,19 +263,17 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
         {statusMessage}
       </p>
 
-      {!openedIncidentDetail ? (
-        <IncidentHistoryPanel
+      {!viewingDetail ? (
+        <ReportsDashboard
           incidents={savedIncidents}
           phase={historyPhase}
           errorMessage={historyError}
-          activeIncidentId={null}
-          selectedIncidentId={selectedIncidentId}
           onRefresh={refreshHistory}
           onSelectIncident={handleOpenIncident}
         />
       ) : null}
 
-      {openedIncidentDetail && selectedReportVersion !== null && report ? (
+      {viewingDetail && openedIncidentDetail && selectedReportVersion !== null && report ? (
         <IncidentDetailView
           detail={openedIncidentDetail}
           selectedVersion={selectedReportVersion}
@@ -287,6 +286,7 @@ export default function ReportsPage({ userId, refreshKey }: ReportsPageProps) {
           persistWarning={persistWarning}
           detailLoading={detailLoading}
           onBack={handleCloseDetail}
+          backLabel="Back to all reports"
           onSelectVersion={handleSelectReportVersion}
           onFollowUpChange={updateFollowUp}
           onRefine={handleRefineSubmit}

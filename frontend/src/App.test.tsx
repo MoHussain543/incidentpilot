@@ -138,7 +138,7 @@ afterEach(() => {
 
 async function openReportsView() {
   fireEvent.click(await screen.findByRole("button", { name: "Reports" }));
-  await waitFor(() => expect(screen.getByText("Saved incident history")).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText("Your saved reports")).toBeInTheDocument());
 }
 
 describe("App", () => {
@@ -154,7 +154,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create workspace" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
-    expect(screen.queryByText("Saved incident history")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your saved reports")).not.toBeInTheDocument();
   });
 
   it("opens the sign-in gate from the landing page", async () => {
@@ -168,6 +168,20 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "← Back to home" })).toBeInTheDocument();
   });
 
+  it("returns to the reports dashboard from incident detail", async () => {
+    render(<App />);
+    await openReportsView();
+
+    const historyButton = screen
+      .getAllByRole("button")
+      .find((button) => button.textContent?.includes("Checkout failures"));
+    fireEvent.click(historyButton!);
+
+    await waitFor(() => expect(screen.getByText("Saved incident")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Back to all reports" }));
+    expect(await screen.findByText("Your saved reports")).toBeInTheDocument();
+  });
+
   it("shows the signed-in app shell with primary navigation", async () => {
     render(<App />);
 
@@ -175,7 +189,18 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Reports" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Account" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Incident intake", level: 1 })).toBeInTheDocument();
-    expect(screen.queryByText("Saved incident history")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your saved reports")).not.toBeInTheDocument();
+  });
+
+  it("shows the reports dashboard with summary stats", async () => {
+    render(<App />);
+
+    await openReportsView();
+
+    expect(screen.getByText("Total incidents")).toBeInTheDocument();
+    expect(screen.getByText("Elevated severity")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Checkout failures", level: 3 })).toBeInTheDocument();
+    expect(screen.getByText("1 report version")).toBeInTheDocument();
   });
 
   it("submits the incident form and renders the triage report", async () => {

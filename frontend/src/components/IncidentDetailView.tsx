@@ -17,6 +17,7 @@ type IncidentDetailViewProps = {
   persistWarning: string | null;
   detailLoading: boolean;
   onBack: () => void;
+  backLabel?: string;
   onSelectVersion: (version: number) => void;
   onFollowUpChange: (questionKey: string, answer: string) => void;
   onRefine: () => void;
@@ -36,6 +37,7 @@ export default function IncidentDetailView({
   persistWarning,
   detailLoading,
   onBack,
+  backLabel = "Back to new analysis",
   onSelectVersion,
   onFollowUpChange,
   onRefine,
@@ -48,7 +50,7 @@ export default function IncidentDetailView({
     <section className="detail-layout">
       <div className="detail-layout__toolbar">
         <button className="secondary-button" type="button" onClick={onBack}>
-          Back to new analysis
+          {backLabel}
         </button>
         <div>
           <p className="panel__eyebrow">Saved incident</p>

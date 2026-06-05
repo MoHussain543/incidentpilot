@@ -1700,6 +1700,199 @@ button {
   font-size: 0.88rem;
 }
 
+.workspace-page--reports {
+  gap: 1.5rem;
+}
+
+.reports-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.reports-dashboard__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.reports-dashboard__title {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.reports-dashboard__subtitle {
+  margin: 0.45rem 0 0;
+  max-width: 42rem;
+  color: var(--text-muted);
+  font-size: 0.96rem;
+}
+
+.reports-dashboard__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.reports-stat {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(153, 191, 234, 0.14);
+  border-radius: 1rem;
+  background: rgba(8, 15, 28, 0.72);
+}
+
+.reports-stat__label {
+  display: block;
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.reports-stat__value {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+  color: #f7fbff;
+}
+
+.reports-stat--warning {
+  border-color: rgba(255, 129, 107, 0.22);
+  background: rgba(255, 129, 107, 0.06);
+}
+
+.reports-stat--accent {
+  border-color: rgba(98, 214, 255, 0.22);
+  background: rgba(98, 214, 255, 0.06);
+}
+
+.reports-dashboard__empty {
+  padding: 2rem 1.5rem;
+  border: 1px dashed rgba(153, 191, 234, 0.2);
+  border-radius: 1.1rem;
+  background: rgba(6, 12, 22, 0.72);
+  text-align: center;
+}
+
+.reports-dashboard__empty-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f7fbff;
+}
+
+.reports-dashboard__empty p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.reports-dashboard__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+
+.reports-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  width: 100%;
+  min-height: 100%;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid rgba(153, 191, 234, 0.14);
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, rgba(10, 18, 32, 0.94), rgba(6, 12, 22, 0.88));
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.reports-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(98, 214, 255, 0.28);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.reports-card--skeleton {
+  cursor: default;
+  pointer-events: none;
+}
+
+.reports-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.reports-card__title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #f7fbff;
+  line-height: 1.35;
+}
+
+.reports-card__meta {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.reports-card__meta-item {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.reports-card__meta-item dt {
+  margin: 0;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.reports-card__meta-item dd {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+
+.reports-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(153, 191, 234, 0.1);
+}
+
+.reports-card__versions {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.reports-card__action {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.reports-card__severity--unknown {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
 @keyframes radarPulse {
   0% {
     transform: scale(1);
@@ -1727,6 +1920,15 @@ button {
 
   .workspace-page-header__status {
     width: 100%;
+  }
+
+  .reports-dashboard__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-dashboard__toolbar {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .landing-hero {
