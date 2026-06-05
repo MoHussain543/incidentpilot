@@ -121,6 +121,8 @@ Takes the original incident request, the previous report, and user-supplied answ
 
 - Frontend target: Vercel, with the root directory set to `frontend`
 - Backend target: Railway, with the root directory set to `backend`
-- Set `VITE_API_BASE_URL` in the frontend deployment to the Railway backend URL
-- Set `OPENAI_API_KEY`, `OPENAI_MODEL`, `APP_CORS_ALLOWED_ORIGINS`, and `SUPABASE_URL` in the backend deployment
+- Set `VITE_API_BASE_URL` in the frontend deployment to the Railway backend URL (no trailing slash)
+- Set `OPENAI_API_KEY`, `OPENAI_MODEL`, `SUPABASE_URL`, and `APP_CORS_ALLOWED_ORIGINS` in the backend deployment
+- `APP_CORS_ALLOWED_ORIGINS` must include your exact Vercel site URL, for example `https://incidentpilot.vercel.app`
+- If the browser shows `Preflight response is not successful. Status code: 403`, the frontend origin is missing from `APP_CORS_ALLOWED_ORIGINS`
 - A backend [Dockerfile](/Users/bilalhussain/Documents/GitHub/incidentpilot/backend/Dockerfile) is included for container-based Railway deployment
